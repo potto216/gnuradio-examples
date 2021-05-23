@@ -33,17 +33,56 @@ options:
 
 blocks:
 - name: samp_rate
-  id: variable
+  id: variable_qtgui_range
   parameters:
     comment: ''
+    gui_hint: ''
+    label: Sample Rate
+    min_len: '200'
+    orient: Qt.Horizontal
+    rangeType: float
+    start: '0'
+    step: '1'
+    stop: '128000'
     value: '32000'
+    widget: counter_slider
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [184, 12]
+    coordinate: [251, 6]
     rotation: 0
-    state: enabled
+    state: true
+- name: tag_string
+  id: variable_qtgui_chooser
+  parameters:
+    comment: ''
+    gui_hint: ''
+    label: Tag String
+    label0: '"Option 1"'
+    label1: '"Option 2"'
+    label2: ''
+    label3: ''
+    label4: ''
+    labels: '[]'
+    num_opts: '2'
+    option0: '0'
+    option1: '1'
+    option2: '2'
+    option3: '3'
+    option4: '4'
+    options: '[0, 1, 2]'
+    orient: Qt.QVBoxLayout
+    type: string
+    value: '0'
+    widget: combo_box
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [535, 19]
+    rotation: 0
+    state: true
 - name: analog_sig_source_x_0
   id: analog_sig_source_x
   parameters:
@@ -57,13 +96,13 @@ blocks:
     offset: '0'
     phase: '0'
     samp_rate: samp_rate
-    type: short
+    type: float
     waveform: analog.GR_SAW_WAVE
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [224, 159]
+    coordinate: [111, 155]
     rotation: 0
     state: true
 - name: blocks_file_meta_sink_0
@@ -73,24 +112,112 @@ blocks:
     alias: ''
     comment: ''
     detached: 'False'
-    extra_dict: pmt.make_dict()
-    file: ''
+    extra_dict: pmt.dict_add(pmt.make_dict(), pmt.intern('Inital'), pmt.from_long(3))
+    file: ./file/data/data_float32_saw_tooth.bin
     max_seg_size: '1000000'
     rel_rate: '1'
     samp_rate: samp_rate
-    type: complex
+    type: float
     unbuffered: 'False'
     vlen: '1'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [657, 154]
+    coordinate: [803, 152]
+    rotation: 0
+    state: true
+- name: blocks_tag_share_0
+  id: blocks_tag_share
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    io_type: float
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    share_type: float
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [425, 186]
+    rotation: 0
+    state: true
+- name: blocks_tags_strobe_0
+  id: blocks_tags_strobe
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    key: pmt.intern("strobe")
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    nsamps: int(samp_rate/100)
+    type: float
+    value: pmt.intern(tag_string)
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [133, 305]
+    rotation: 0
+    state: true
+- name: blocks_throttle_0
+  id: blocks_throttle
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    ignoretag: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samples_per_second: samp_rate
+    type: float
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [592, 198]
+    rotation: 0
+    state: true
+- name: data_state
+  id: epy_module
+  parameters:
+    alias: ''
+    comment: ''
+    source_code: "# this module will be imported in the into your flowgraph\ntag_count=0\n\
+      \ndef get_and_update_tag_count():\n  global tag_count\n  tag_count = tag_count\
+      \ + 1\n  return tag_count\n"
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [678, 52]
+    rotation: 0
+    state: true
+- name: import_0
+  id: import
+  parameters:
+    alias: ''
+    comment: ''
+    imports: import pmt
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [446, 34]
     rotation: 0
     state: true
 
 connections:
-- [analog_sig_source_x_0, '0', blocks_file_meta_sink_0, '0']
+- [analog_sig_source_x_0, '0', blocks_tag_share_0, '0']
+- [blocks_tag_share_0, '0', blocks_throttle_0, '0']
+- [blocks_tags_strobe_0, '0', blocks_tag_share_0, '1']
+- [blocks_throttle_0, '0', blocks_file_meta_sink_0, '0']
 
 metadata:
   file_format: 1
