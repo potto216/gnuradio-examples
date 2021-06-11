@@ -21,7 +21,7 @@ options:
     run_options: prompt
     sizing_mode: fixed
     thread_safe_setters: ''
-    title: Demonstrate File Meta Sink block
+    title: File Meta Sink Demo
     window_size: ''
   states:
     bus_sink: false
@@ -53,14 +53,14 @@ blocks:
     coordinate: [251, 6]
     rotation: 0
     state: true
-- name: tag_string
+- name: strobe_value
   id: variable_qtgui_chooser
   parameters:
     comment: ''
     gui_hint: ''
-    label: Tag String
-    label0: '"Option 1"'
-    label1: '"Option 2"'
+    label: Tags strobe value
+    label0: '"Stobe = 0"'
+    label1: '"Stobe = 1"'
     label2: ''
     label3: ''
     label4: ''
@@ -80,7 +80,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [535, 19]
+    coordinate: [536, 19]
     rotation: 0
     state: true
 - name: analog_sig_source_x_0
@@ -102,7 +102,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [111, 155]
+    coordinate: [110, 142]
     rotation: 0
     state: true
 - name: blocks_file_meta_sink_0
@@ -124,7 +124,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [803, 152]
+    coordinate: [803, 150]
     rotation: 0
     state: true
 - name: blocks_tag_share_0
@@ -156,7 +156,7 @@ blocks:
     minoutbuf: '0'
     nsamps: int(samp_rate/100)
     type: float
-    value: pmt.intern(tag_string)
+    value: pmt.intern(strobe_value)
     vlen: '1'
   states:
     bus_sink: false
@@ -182,34 +182,6 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [592, 198]
-    rotation: 0
-    state: true
-- name: data_state
-  id: epy_module
-  parameters:
-    alias: ''
-    comment: ''
-    source_code: "# this module will be imported in the into your flowgraph\ntag_count=0\n\
-      \ndef get_and_update_tag_count():\n  global tag_count\n  tag_count = tag_count\
-      \ + 1\n  return tag_count\n"
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [678, 52]
-    rotation: 0
-    state: true
-- name: import_0
-  id: import
-  parameters:
-    alias: ''
-    comment: ''
-    imports: import pmt
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [446, 34]
     rotation: 0
     state: true
 
