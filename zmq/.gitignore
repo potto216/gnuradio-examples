@@ -1,0 +1,5 @@
+# Ignore all Python files
+*.py
+
+# Exclude files starting with 'run_'
+!run_*.py
