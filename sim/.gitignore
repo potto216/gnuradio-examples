@@ -1,1 +1,4 @@
+# Exclude files starting with 'run_'
+!run_*.py
+*.log
 *.py

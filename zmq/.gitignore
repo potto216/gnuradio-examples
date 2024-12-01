@@ -1,5 +1,5 @@
 # Ignore all Python files
 *.py
-
+*.txt
 # Exclude files starting with 'run_'
 !run_*.py
