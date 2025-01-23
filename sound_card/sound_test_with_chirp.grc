@@ -204,7 +204,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [992, 504.0]
+    coordinate: [984, 520.0]
     rotation: 180
     state: enabled
 - name: blocks_magphase_to_complex_0
@@ -276,6 +276,28 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [952, 128.0]
+    rotation: 0
+    state: enabled
+- name: blocks_wavfile_sink_0
+  id: blocks_wavfile_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    append: 'False'
+    bits_per_sample1: FORMAT_PCM_16
+    bits_per_sample2: FORMAT_PCM_16
+    bits_per_sample3: FORMAT_VORBIS
+    bits_per_sample4: FORMAT_PCM_16
+    comment: ''
+    file: /home/user/data/sound_test_with_chirp.wav
+    format: FORMAT_WAV
+    nchan: '2'
+    samp_rate: samp_rate
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1200, 544.0]
     rotation: 0
     state: enabled
 - name: epy_block_0
@@ -767,7 +789,9 @@ connections:
 - [analog_const_source_x_0_0, '0', blocks_float_to_complex_1, '1']
 - [analog_sig_source_x_0, '0', epy_block_0, '0']
 - [audio_source_0, '0', blocks_float_to_complex_1, '0']
+- [audio_source_0, '0', blocks_wavfile_sink_0, '1']
 - [blocks_complex_to_float_0, '0', audio_sink_0, '0']
+- [blocks_complex_to_float_0, '0', blocks_wavfile_sink_0, '0']
 - [blocks_float_to_complex_0, '0', qtgui_time_sink_x_0, '1']
 - [blocks_float_to_complex_1, '0', blocks_multiply_conjugate_cc_0, '1']
 - [blocks_magphase_to_complex_0, '0', blocks_throttle2_0, '0']

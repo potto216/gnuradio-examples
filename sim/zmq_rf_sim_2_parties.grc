@@ -96,7 +96,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [736, 592.0]
+    coordinate: [440, 1080.0]
     rotation: 0
     state: enabled
 - name: analog_sig_source_x_0_0
@@ -119,7 +119,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [352, 568.0]
+    coordinate: [56, 1056.0]
     rotation: 0
     state: enabled
 - name: blocks_add_xx_0
@@ -188,7 +188,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [840, 1096.0]
+    coordinate: [840, 1464.0]
     rotation: 0
     state: disabled
 - name: blocks_delay_0
@@ -248,7 +248,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [456, 1256.0]
+    coordinate: [456, 1624.0]
     rotation: 180
     state: disabled
 - name: blocks_msgpair_to_var_0
@@ -278,7 +278,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [672, 528.0]
+    coordinate: [712, 528.0]
     rotation: 180
     state: enabled
 - name: blocks_pack_k_bits_bb_0_0
@@ -310,7 +310,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [680, 1256.0]
+    coordinate: [680, 1624.0]
     rotation: 180
     state: disabled
 - name: blocks_packed_to_unpacked_xx_0
@@ -367,7 +367,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [320, 1088.0]
+    coordinate: [320, 1456.0]
     rotation: 0
     state: disabled
 - name: blocks_throttle2_0
@@ -430,7 +430,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [536, 1088.0]
+    coordinate: [536, 1456.0]
     rotation: 0
     state: disabled
 - name: blocks_uchar_to_float_0_0
@@ -490,7 +490,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [848, 536.0]
+    coordinate: [888, 536.0]
     rotation: 180
     state: enabled
 - name: digital_binary_slicer_fb_0_0
@@ -520,7 +520,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [856, 1264.0]
+    coordinate: [856, 1632.0]
     rotation: 180
     state: disabled
 - name: digital_map_bb_0
@@ -568,7 +568,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [712, 1096.0]
+    coordinate: [712, 1464.0]
     rotation: 0
     state: disabled
 - name: note_0
@@ -581,7 +581,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [360, 1008.0]
+    coordinate: [360, 1376.0]
     rotation: 0
     state: disabled
 - name: note_0_0
@@ -743,7 +743,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1000, 1096.0]
+    coordinate: [1000, 1464.0]
     rotation: 0
     state: disabled
 - name: virtual_sink_0_0_0_0
@@ -756,7 +756,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1112, 632.0]
+    coordinate: [816, 1120.0]
     rotation: 0
     state: enabled
 - name: virtual_sink_0_1
@@ -808,7 +808,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [320, 1176.0]
+    coordinate: [320, 1544.0]
     rotation: 0
     state: disabled
 - name: virtual_sink_1_0_0_0
@@ -821,7 +821,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [584, 608.0]
+    coordinate: [288, 1096.0]
     rotation: 0
     state: enabled
 - name: virtual_source_0
@@ -834,7 +834,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1016, 528.0]
+    coordinate: [1056, 528.0]
     rotation: 180
     state: enabled
 - name: virtual_source_0_0
@@ -860,7 +860,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1000, 1256.0]
+    coordinate: [1000, 1624.0]
     rotation: 180
     state: disabled
 - name: virtual_source_0_1
@@ -1004,7 +1004,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [32, 1224.0]
+    coordinate: [32, 1592.0]
     rotation: 180
     state: disabled
 - name: zeromq_sub_msg_source_0
@@ -1091,7 +1091,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [32, 1064.0]
+    coordinate: [32, 1432.0]
     rotation: 0
     state: disabled
 

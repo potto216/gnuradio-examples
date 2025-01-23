@@ -1,0 +1,13 @@
+# python --version
+# python -m venv .analysis
+# source .analysis/bin/activate
+# python -m pip install --upgrade pip
+# pip install wheel
+# pip install -r requirements.txt
+jupyterlab
+numpy
+matplotlib
+pandas
+soundfile
+plotly
+scipy
