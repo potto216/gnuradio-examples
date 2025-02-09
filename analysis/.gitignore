@@ -1,2 +1,5 @@
 .analysis
 .vscode
+__pycache__
+*.pyc
+*.gif

@@ -11,3 +11,4 @@ pandas
 soundfile
 plotly
 scipy
+imageio

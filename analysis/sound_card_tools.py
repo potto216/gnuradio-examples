@@ -920,13 +920,108 @@ def load_chunked_npz_merged(directory, fields=None, chunk_indices=None):
     return merged_data
 
 
+import os
+import numpy as np
+import wave
+
+def create_sine_wave_wav(filename, file_path, amplitude, frequency, duration,
+                           sample_rate=44100, bit_depth=16, stereo=False):
+    """
+    Creates a WAV file containing a sine wave.
+
+    Parameters:
+      filename (str): The name of the WAV file to create ('.wav' will be appended if not present).
+      file_path (str): The directory path where the WAV file will be saved.
+      amplitude (float): The amplitude of the sine wave (a value between 0 and 1).
+      frequency (float): The frequency of the sine wave in Hertz (must be positive).
+      duration (float): The length of the sine wave in seconds (must be positive).
+      sample_rate (int): The sample rate in Hz (default is 44100). Must be a positive integer.
+      bit_depth (int): Bits of resolution (default 16). Supported values: 8 or 16.
+      stereo (bool): If True, create a stereo file (with the same sine wave duplicated on both channels);
+                     if False, create a mono file.
+    
+    Raises:
+      ValueError: If any of the parameters are invalid.
+    
+    On success, the function prints a success message with the full file path.
+    """
+    
+    # --- Input Validation ---
+    if not isinstance(filename, str) or not filename.strip():
+        raise ValueError("Invalid filename provided.")
+    
+    if not isinstance(file_path, str) or not file_path.strip():
+        raise ValueError("Invalid file path provided.")
+    
+    if not os.path.isdir(file_path):
+        raise ValueError("The specified file path does not exist.")
+    
+    if not (isinstance(sample_rate, int) and sample_rate > 0):
+        raise ValueError("Sample rate must be a positive integer.")
+    
+    if not (isinstance(bit_depth, int) and bit_depth in [8, 16]):
+        raise ValueError("Bit depth must be either 8 or 16.")
+    
+    if not (isinstance(amplitude, (int, float)) and 0 <= amplitude <= 1):
+        raise ValueError("Amplitude must be a number between 0 and 1.")
+    
+    if not (isinstance(frequency, (int, float)) and frequency > 0):
+        raise ValueError("Frequency must be a positive number.")
+    
+    if not (isinstance(duration, (int, float)) and duration > 0):
+        raise ValueError("Duration must be a positive number.")
+    
+    if not isinstance(stereo, bool):
+        raise ValueError("Stereo parameter must be a boolean.")
+    
+    # Ensure the filename ends with .wav
+    if not filename.lower().endswith('.wav'):
+        filename += '.wav'
+    full_file_path = os.path.join(file_path, filename)
+    
+    # --- Generate the Sine Wave Data ---
+    # Calculate the number of samples.
+    n_samples = int(sample_rate * duration)
+    # Create an array of time values.
+    t = np.linspace(0, duration, n_samples, endpoint=False)
+    # Generate the sine wave (values will be in the range [-1, 1]).
+    sine_wave = np.sin(2 * np.pi * frequency * t)
+    
+    # Scale the sine wave data to the appropriate integer range.
+    if bit_depth == 16:
+        # For 16-bit PCM, the values are in the range -32768 to 32767.
+        max_int_value = np.iinfo(np.int16).max  # 32767
+        samples = (sine_wave * amplitude * max_int_value).astype(np.int16)
+    elif bit_depth == 8:
+        # For 8-bit PCM, the values are unsigned [0, 255] with 128 as the midpoint.
+        samples = ((sine_wave * amplitude * 127) + 128).astype(np.uint8)
+    
+    # If stereo, duplicate the mono samples into two channels.
+    if stereo:
+        # Stack the same data side-by-side.
+        samples = np.column_stack((samples, samples))
+    
+    # --- Write the Data to a WAV File ---
+    try:
+        with wave.open(full_file_path, 'wb') as wav_file:
+            n_channels = 2 if stereo else 1
+            sampwidth = bit_depth // 8  # bytes per sample
+            wav_file.setnchannels(n_channels)
+            wav_file.setsampwidth(sampwidth)
+            wav_file.setframerate(sample_rate)
+            wav_file.writeframes(samples.tobytes())
+        print(f"WAV file created successfully: {full_file_path}")
+    except Exception as e:
+        print(f"An error occurred while writing the WAV file: {e}")
+
+
 # --------------------------------------------------------------------------
 # Example usage (assuming you have sc_output, sc_input, and sample_rate)
 
 # delay_samples, delay_seconds = find_delay_by_amplitude(sc_output, sc_input, sample_rate=44100)
 # print(f"Detected delay: {delay_samples} samples, which is {delay_seconds:.3f} seconds.")
 
-def main():
+def test_find_delay_by_amplitude():
     # Open the wav file
     file_path = '/home/user/data/sound_test_with_chirp.wav'
     show_plots = False
@@ -966,12 +1061,19 @@ def main():
     print(f"Detected delay: {delay_idx} samples, which is {delay_seconds:.5f} seconds.")
 
 
+from pathlib import Path  # Add at top of file if not present
 
 def test_process_large_wav_in_chunks():
     filename = 'sound_test_with_sine_baseline_20250112.wav'
     filename = 'sound_test_with_sine_ice_20250112.wav'
+    filename = 'sine_wave_120_sec_4KHz.wav'
+    # output_csv_path has the base name of filename without the extension and with a postfix of _phases.csv
+    output_csv_path = Path(filename).stem + "_phases.csv"
+    
+    
     file_path = Path('/home/user/data')
     full_file_path = file_path / filename 
+    full_output_csv_path = file_path / output_csv_path
     results = process_large_wav_in_chunks(
         filename=full_file_path,
         channel=0,
@@ -979,7 +1081,7 @@ def test_process_large_wav_in_chunks():
         threshold=None,
         min_below_count=200,
         override_sample_rate=None,
-        output_csv_path="output_phases.csv"  # or None, if you don't want file output
+        output_csv_path=full_output_csv_path  # or None, if you don't want file output
     )
 
     # Print how many chunks were processed
@@ -995,7 +1097,26 @@ def test_process_large_wav_in_chunks():
         print("End time:", first_chunk["end_time"])
 
 
+
+# Example usage:
+def test_create_sine_wave_wav():
+    # Parameters for the sine wave:
+    filename = "/home/user/data/sine_wave_120_sec_4KHz.wav"
+    file_path = "."  # current directory
+    amplitude = 0.8       # 80% of maximum amplitude
+    frequency = 4000       # A4 note, 440 Hz
+    duration = 120          # 2 seconds long
+    sample_rate = 44100   # CD quality
+    bit_depth = 16        # 16-bit resolution
+    stereo = True         # stereo output
+
+    create_sine_wave_wav(filename, file_path, amplitude, frequency, duration,
+                           sample_rate=sample_rate, bit_depth=bit_depth, stereo=stereo)
+
+
+
 if __name__ == '__main__':
+    # test_create_sine_wave_wav()
     test_process_large_wav_in_chunks()
-    # main()
+    # test_find_delay_by_amplitude()
     # test_find_shift_between_signals_and_shift_signal()
