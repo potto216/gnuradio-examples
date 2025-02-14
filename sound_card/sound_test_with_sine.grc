@@ -56,8 +56,8 @@ blocks:
     rangeType: float
     start: '10'
     step: '10'
-    stop: '10000'
-    value: '4000'
+    stop: '20000'
+    value: '12000'
     widget: counter_slider
   states:
     bus_sink: false
@@ -157,7 +157,7 @@ blocks:
     bits_per_sample3: FORMAT_VORBIS
     bits_per_sample4: FORMAT_PCM_16
     comment: ''
-    file: /home/user/data/sound_test_with_sine_ice_20250112.wav
+    file: /home/user/data/sound_test_12KHz_20250213.wav
     format: FORMAT_WAV
     nchan: '2'
     samp_rate: samp_rate
