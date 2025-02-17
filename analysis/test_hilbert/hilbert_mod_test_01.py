@@ -10,8 +10,9 @@ save_plots = True
 # =======================
 # User-Specified Settings
 # =======================
-model_type = "wideband"  # "sinusoidal" or "complex"
+model_type = "narrowband"  # "sinusoidal" or "complex"
 if model_type=="narrowband":
+   
     fs = 44100                # Sampling rate (Hz)
     duration = 1.0            # Signal duration (seconds)
     N = int(fs * duration)    # Number of samples
@@ -24,7 +25,7 @@ if model_type=="narrowband":
     amp_mod = 1.0 + 0.5 * np.sin(1 * np.pi * 2 * t)
 
     # Phase modulation function (user specifiable)
-    phase_mod = 0.2 * np.sin(1 * np.pi * 5 * t)
+    phase_mod = 0.1 * np.sin(2 * np.pi * 5 * t)
 
     # Gaussian noise standard deviation (user specifiable)
     noise_std = 0.0001
@@ -41,7 +42,8 @@ elif model_type=="wideband":
     amp_mod = 1.0 + 0.5 * np.sin(2 * np.pi * 2 * t)
 
     # Phase modulation function (user specifiable)
-    phase_mod = 0.2 * np.sin(70 * np.pi * 5 * t)
+    
+    phase_mod = 0.2 * np.sin(70 * np.pi * 5 * t+np.random.rand(t.shape[0])*.4*np.pi)
 
     # Gaussian noise standard deviation (user specifiable)
     noise_std = 0.0001
@@ -87,7 +89,7 @@ x_real_zoom = x_real[:samples_to_show]
 x_complex_zoom = x_complex[:samples_to_show]
 
 plt.figure(figsize=(10, 6))
-plt.plot(t_zoom, x_real_zoom, label="Real Part of Signal", color='b', lw=2)
+plt.plot(t_zoom, x_real_zoom, label="Real Part of Signal (X) ", color='b', lw=2)
 plt.plot(t_zoom, np.real(x_complex_zoom), '--', label="Real Part of Complex Signal", color='g', lw=1.5)
 plt.plot(t_zoom, np.imag(x_complex_zoom), ':', label="Imaginary Part of Complex Signal", color='r', lw=1.5)
 
@@ -228,11 +230,11 @@ error_analytic = inst_freq_analytic_trim - true_if_trim
 # Create a figure with two subplots:
 #   Top: Instantaneous frequencies vs. time (trimmed)
 #   Bottom: Y-Y error plot (error vs. true instantaneous frequency)
-fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
+fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=False)
 
 # Top subplot: Time-domain plot of instantaneous frequencies
 ax1.plot(t_trim, inst_freq_fir_trim, linestyle=':', lw=1.5, label="FIR Inst. Frequency")
-ax1.plot(t_trim, inst_freq_analytic_trim, linestyle='--', lw=1.5, label="Hilbert Inst. Frequency")
+ax1.plot(t_trim, inst_freq_analytic_trim, linestyle='--', lw=1.5, label="FFT Inst. Frequency")
 ax1.plot(t_trim, true_if_trim, lw=1.5, label="True Instantaneous Frequency")
 ax1.set_ylabel("Frequency (Hz)")
 ax1.set_title("Instantaneous Frequency Comparison (Time Domain)")
@@ -240,14 +242,18 @@ ax1.legend()
 ax1.grid(True)
 
 # Bottom subplot: Y-Y error plot (error vs. true instantaneous frequency)
-ax2.plot(t_trim, error_fir, linestyle=':', lw=1.5, label="FIR Error")
-ax2.plot(t_trim, error_analytic, linestyle='--', lw=1.5, label="Hilbert Error")
-ax2.axhline(0, color='k', lw=1, linestyle='--')  # Zero error reference
-ax2.set_xlabel("True Instantaneous Frequency (Hz)")
-ax2.set_ylabel("Time (seconds)")
-ax2.set_title("Instantaneous Frequency Error Comparison")
+# ax2.plot(t_trim, inst_freq_fir_trim, linestyle=':', lw=1.5, label="FIR Error")
+ax2.plot(t_trim, inst_freq_analytic_trim, color='orange',linestyle='-', lw=1.5)
+ax2.axhline(f0, color='k', lw=1, linestyle='--')  # Zero error reference
+ax2.set_xlabel("Time (seconds)")
+ax2.set_ylabel("Instantaneous Frequency (Hz)")
+ax2.set_title("Instantaneous Frequency (Zoomed)")
 ax2.legend()
 ax2.grid(True)
+# zoom in the time axis in the midpoint of time for a few cycles
+midpoint = len(t_trim)//2
+zoom_samples = int(num_cycles_to_show*10 * T0 * fs)
+ax2.set_xlim(t_trim[midpoint-zoom_samples], t_trim[midpoint+zoom_samples])
 
 plt.tight_layout()
 if show_plots:

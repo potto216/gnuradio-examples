@@ -27,6 +27,9 @@ if model_type=="wavfile":
     f0 = 12000
     # Ideal frequency for the WAV file signal (Hz)
     frequency_zoom_hz = [f0-5, f0+5]
+    frequency_zoom_hz = None
+    # User-defined frequency range where the signal is present.
+    signal_freq_range = [f0-5, f0+5]
 elif model_type=="narrowband":
     fs = 44100                # Sampling rate (Hz)
     duration = 1.0            # Signal duration (seconds)
@@ -37,6 +40,7 @@ elif model_type=="narrowband":
     amp_mod = 1.0 + 0.5 * np.sin(1 * np.pi * 2 * t)
     phase_mod = 0.2 * np.sin(1 * np.pi * 5 * t)
     noise_std = 0.0001
+    signal_freq_range = [f0-5, f0+5]
 elif model_type=="wideband":
     fs = 44100
     duration = 1.0
@@ -47,6 +51,7 @@ elif model_type=="wideband":
     amp_mod = 1.0 + 0.5 * np.sin(2 * np.pi * 2 * t)
     phase_mod = 0.2 * np.sin(70 * np.pi * 5 * t)
     noise_std = 0.0001
+    signal_freq_range = [f0-5, f0+5]
 else:
     raise ValueError("Invalid model type. Choose 'wavfile', 'narrowband' or 'wideband'.")
 
@@ -327,8 +332,6 @@ if save_plots:
 # Noise Spectrum and Noise Statistics Investigation
 # ==============================
 
-# User-defined frequency range where the signal is present.
-signal_freq_range = frequency_zoom_hz
 
 # Compute the FFT of the original real signal
 N = len(x_real)
@@ -451,7 +454,7 @@ if include_fir_in_combined:
     ax2.plot(t_trim, inst_freq_fir_trim, linestyle=':', lw=1.5, label="FIR Implementation")
     ax2.plot(t_trim, inst_freq_analytic_trim, linestyle='--', lw=1.5, label="FFT Implementation")
 else:
-    ax2.plot(t_trim, inst_freq_analytic_trim, color='orange', linestyle='--', lw=1.5, label=None)
+    ax2.plot(t_trim, inst_freq_analytic_trim, color='orange', linestyle='-', lw=1.5, label=None)
 
 ax2.set_xlabel("Time (seconds)")
 ax2.set_ylabel("Frequency (Hz)")
@@ -463,7 +466,7 @@ ax2.legend()
 ax2.grid(True)
 # zoom in the time axis in the midpoint of time for a few cycles
 midpoint = len(t_trim)//2
-zoom_samples = int(num_cycles_to_show * T0 * fs)
+zoom_samples = int(num_cycles_to_show * T0 * fs*10)
 ax2.set_xlim(t_trim[midpoint-zoom_samples], t_trim[midpoint+zoom_samples])
 
 
@@ -497,7 +500,7 @@ print(f"Median: {median_freq:.2f} Hz")
 
 # Create histogram plot
 plt.figure(figsize=(10, 6))
-plt.hist(inst_freq_analytic_trim, bins=50, color='o', alpha=0.7, label="Instantaneous Frequency Histogram")
+plt.hist(inst_freq_analytic_trim, bins=50, color='orange', alpha=0.7, label="Instantaneous Frequency Histogram")
 plt.xlabel("Instantaneous Frequency (Hz)")
 plt.ylabel("Count")
 plt.title("Histogram of Instantaneous Frequency (Hilbert Transform)")
