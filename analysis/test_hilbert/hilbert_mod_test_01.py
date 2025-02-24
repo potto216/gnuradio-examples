@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import hilbert
@@ -10,7 +11,8 @@ save_plots = True
 # =======================
 # User-Specified Settings
 # =======================
-model_type = "narrowband"  # "sinusoidal" or "complex"
+model_type = "narrowband" 
+#model_type = "wideband"
 if model_type=="narrowband":
    
     fs = 44100                # Sampling rate (Hz)
@@ -102,8 +104,11 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/real_vs_complex_signal.png", dpi=300)
-    plt.savefig("images/real_vs_complex_signal.svg", format='svg')
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)                
+    plt.savefig(f"{image_filepath}/real_vs_complex_signal.png", dpi=300)
+    plt.savefig(f"{image_filepath}/real_vs_complex_signal.svg", format='svg')
 
 # Compute FFTs for later plotting.
 freqs, X_complex_mag, X_complex_dB = compute_fft(x_complex, fs)
@@ -125,8 +130,12 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/real_vs_complex_spectrum.png", dpi=300)
-    plt.savefig("images/real_vs_complex_spectrum.svg", format='svg')
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)                
+    plt.savefig(f"{image_filepath}/real_vs_complex_spectrum.png", dpi=300)
+    plt.savefig(f"{image_filepath}/real_vs_complex_spectrum.svg", format='svg')
+
 
 # ==============================
 # Plot 2: Hilbert Transform Analysis (Using scipy.signal.hilbert)
@@ -157,8 +166,11 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/hilbert_transform_analysis.png", dpi=300)
-    plt.savefig("images/hilbert_transform_analysis.svg", format='svg')
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)                
+    plt.savefig(f"{image_filepath}/hilbert_transform_analysis.png", dpi=300)
+    plt.savefig(f"{image_filepath}/hilbert_transform_analysis.svg", format='svg')    
 
 # ==============================
 # Plot 3: FIR Hilbert Transformer Analysis (Complex FIR for Analytic Signal)
@@ -202,8 +214,11 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/fir_hilbert_transformer_analysis.png", dpi=300)
-    plt.savefig("images/fir_hilbert_transformer_analysis.svg", format='svg')
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)                
+    plt.savefig(f"{image_filepath}/fir_hilbert_transformer_analysis.png", dpi=300)
+    plt.savefig(f"{image_filepath}/fir_hilbert_transformer_analysis.svg", format='svg')    
 
 # ==============================
 # Plot 4: Instantaneous Frequency Comparison and Error (Two Subplots)
@@ -233,11 +248,12 @@ error_analytic = inst_freq_analytic_trim - true_if_trim
 fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 10), sharex=False)
 
 # Top subplot: Time-domain plot of instantaneous frequencies
-ax1.plot(t_trim, inst_freq_fir_trim, linestyle=':', lw=1.5, label="FIR Inst. Frequency")
+#ax1.plot(t_trim, inst_freq_fir_trim, linestyle=':', lw=1.5, label="FIR Inst. Frequency")
 ax1.plot(t_trim, inst_freq_analytic_trim, linestyle='--', lw=1.5, label="FFT Inst. Frequency")
 ax1.plot(t_trim, true_if_trim, lw=1.5, label="True Instantaneous Frequency")
 ax1.set_ylabel("Frequency (Hz)")
-ax1.set_title("Instantaneous Frequency Comparison (Time Domain)")
+ax1.set_title("Instantaneous Frequency")
+ax2.set_xlabel("Time (seconds)")
 ax1.legend()
 ax1.grid(True)
 
@@ -259,5 +275,8 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/instantaneous_frequency_comparison_subplots.png", dpi=300)
-    plt.savefig("images/instantaneous_frequency_comparison_subplots.svg", format='svg')
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)
+    plt.savefig(f"{image_filepath}/instantaneous_frequency_comparison_subplots.png", dpi=300)
+    plt.savefig(f"{image_filepath}/instantaneous_frequency_comparison_subplots.svg", format='svg')

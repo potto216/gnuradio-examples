@@ -102,14 +102,12 @@ def plot_phase_ambiguity(magnitudes, real_value, figure_number=1, show_plots=Tru
             ax_top.scatter([real_value], [0], color='red', marker='x', s=2*50, label='V1 Real Value')
             ax_top.scatter([real_value], [0], color='red', marker='o', s=2*50, facecolors='none', edgecolors='r', label='V2 Real Value')
         
-        
-
         ax_top.axhline(0, color='black', linewidth=0.8)
         ax_top.axvline(0, color='black', linewidth=0.8)
 
         ax_top.set_aspect('equal', adjustable='datalim')
-        ax_top.set_xlabel("Real (X Coordinate)")
-        ax_top.set_ylabel("Imaginary (Y Coordinate)")
+        ax_top.set_xlabel("Real (x-coordinate)")
+        ax_top.set_ylabel("Imaginary (y-coordinate)")
         
         if label_mode == 'direction':
             ax_top.set_title(f"{top_label} CCW θ = {theta_deg:.2f}°, CW θ = {theta_fourth_deg:.2f}°")
@@ -143,8 +141,8 @@ def plot_phase_ambiguity(magnitudes, real_value, figure_number=1, show_plots=Tru
                         
         ax_bottom.axhline(0, color='black', linestyle=':', linewidth=0.8)
         ax_bottom.set_xlabel("Phase Angle (°)")
-        ax_bottom.set_ylabel("Real (X Coordinate)")
-        ax_bottom.set_title(f"{bottom_label}Real (X Coordinate) vs Phase Angle")
+        ax_bottom.set_ylabel("Real (x-coordinate)")
+        ax_bottom.set_title(f"{bottom_label}Real (x-coordinate) vs Phase Angle")
 
         legend_loc = legend_locs.get(f'bottom_{i}', 'upper right') if legend_locs else 'upper right'
         ax_bottom.legend(loc=legend_loc)
@@ -169,8 +167,8 @@ def plot_phase_ambiguity(magnitudes, real_value, figure_number=1, show_plots=Tru
 
     if save_plots:
         os.makedirs("images", exist_ok=True)
-        plt.savefig("images/phase_ambiguity_visualization.png", dpi=300)
-        plt.savefig("images/phase_ambiguity_visualization.svg", format='svg')
+        plt.savefig("images/fig2_phase_ambiguity_visualization.png", dpi=300)
+        plt.savefig("images/fig2_phase_ambiguity_visualization.svg", format='svg')
 
     if show_plots:
         plt.show()

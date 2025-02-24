@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.signal import hilbert
@@ -14,6 +15,8 @@ save_plots = True
 include_fir_in_combined = False  # Set to False to hide FIR Hilbert plot in the combined graph
 
 model_type = "wavfile"  # Use "wavfile" to load a WAV file signal
+#model_type = "narrowband"
+#model_type = "wideband"
 if model_type=="wavfile":
     import soundfile as sf
     filename = "/home/user/data/sound_test_with_sine_baseline_20250112.wav"  # Ensure this WAV file exists in the working directory
@@ -41,17 +44,19 @@ elif model_type=="narrowband":
     phase_mod = 0.2 * np.sin(1 * np.pi * 5 * t)
     noise_std = 0.0001
     signal_freq_range = [f0-5, f0+5]
+    frequency_zoom_hz = None
 elif model_type=="wideband":
     fs = 44100
     duration = 1.0
     N = int(fs * duration)
     t = np.arange(N) / fs
 
-    f0 = 3000
+    f0 = 12000  # Nominal frequency (Hz)
     amp_mod = 1.0 + 0.5 * np.sin(2 * np.pi * 2 * t)
     phase_mod = 0.2 * np.sin(70 * np.pi * 5 * t)
     noise_std = 0.0001
     signal_freq_range = [f0-5, f0+5]
+    frequency_zoom_hz = None
 else:
     raise ValueError("Invalid model type. Choose 'wavfile', 'narrowband' or 'wideband'.")
 
@@ -74,6 +79,7 @@ else:
     # Note: The true instantaneous frequency is not used in the wavfile case.
     x_complex = amp_mod * np.exp(1j * true_phase)
     x_real = np.real(x_complex) + np.random.normal(0, noise_std, size=t.shape)
+    ideal_wavfile_frequency_hz=f0
 
 # ==============================
 # FFT Utility Function
@@ -112,8 +118,11 @@ if model_type=="wavfile":
     if show_plots:
         plt.show()
     if save_plots:
-        plt.savefig("images/wavfile_signal.png", dpi=300)
-        plt.savefig("images/wavfile_signal.svg", format='svg')
+        image_filepath = f"images/{model_type}"
+        if not os.path.exists(image_filepath):
+            os.makedirs(image_filepath)
+        plt.savefig(f"{image_filepath}/wavfile_signal.png", dpi=300)
+        plt.savefig(f"{image_filepath}/wavfile_signal.svg", format='svg')    
 else:
     # For synthetic signals, plot both the real and complex parts.
     samples_to_show = min(int(num_cycles_to_show * T0 * fs),len(t))
@@ -134,8 +143,12 @@ else:
     if show_plots:
         plt.show()
     if save_plots:
-        plt.savefig("images/real_vs_complex_signal.png", dpi=300)
-        plt.savefig("images/real_vs_complex_signal.svg", format='svg')
+        image_filepath = f"images/{model_type}"
+        if not os.path.exists(image_filepath):
+            os.makedirs(image_filepath)
+        plt.savefig(f"{image_filepath}/real_vs_complex_signal.png", dpi=300)
+        plt.savefig(f"{image_filepath}/real_vs_complex_signal.svg", format='svg')    
+
 
 # Compute FFT of the real signal (and complex signal if available)
 freqs, X_real_mag, X_real_dB = compute_fft(x_real, fs)
@@ -166,12 +179,12 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    if model_type=="wavfile":
-        plt.savefig("images/wavfile_spectrum.png", dpi=300)
-        plt.savefig("images/wavfile_spectrum.svg", format='svg')
-    else:
-        plt.savefig("images/real_vs_complex_spectrum.png", dpi=300)
-        plt.savefig("images/real_vs_complex_spectrum.svg", format='svg')
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)
+    plt.savefig(f"{image_filepath}/real_vs_complex_spectrum.png", dpi=300)
+    plt.savefig(f"{image_filepath}/real_vs_complex_spectrum.svg", format='svg')    
+
 
 # =============================
 # Plot 2: Hilbert FFT filter  (Using scipy.signal.hilbert)
@@ -216,8 +229,12 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/hilbert_transform_analysis.png", dpi=300)
-    plt.savefig("images/hilbert_transform_analysis.svg", format='svg')
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)
+    plt.savefig(f"{image_filepath}/hilbert_transform_analysis.png", dpi=300)
+    plt.savefig(f"{image_filepath}/hilbert_transform_analysis.svg", format='svg')    
+        
 
 # ==============================
 # Plot 3: FIR Hilbert Transformer Analysis (Complex FIR for Analytic Signal)
@@ -275,8 +292,11 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/fir_hilbert_transformer_analysis.png", dpi=300)
-    plt.savefig("images/fir_hilbert_transformer_analysis.svg", format='svg')
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)
+    plt.savefig(f"{image_filepath}/fir_hilbert_transformer_analysis.png", dpi=300)
+    plt.savefig(f"{image_filepath}/fir_hilbert_transformer_analysis.svg", format='svg')    
 
 # ==============================
 # Combined Frequency Plot: Signal, FFT Hilbert Transform, and FIR Hilbert Transform
@@ -325,8 +345,11 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/combined_hilbert_transform_analysis.png", dpi=300)
-    plt.savefig("images/combined_hilbert_transform_analysis.svg", format='svg')
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)
+    plt.savefig(f"{image_filepath}/combined_hilbert_transform_analysis.png", dpi=300)
+    plt.savefig(f"{image_filepath}/combined_hilbert_transform_analysis.svg", format='svg')    
 
 # ==============================
 # Noise Spectrum and Noise Statistics Investigation
@@ -369,8 +392,12 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/noise_spectrum.png", dpi=300)
-    plt.savefig("images/noise_spectrum.svg", format='svg')
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)
+    plt.savefig(f"{image_filepath}/noise_spectrum.png", dpi=300)
+    plt.savefig(f"{image_filepath}/noise_spectrum.svg", format='svg')
+
 
 # Inverse FFT to convert the noise spectrum back to the time domain
 noise_time = np.fft.ifft(X_noise)
@@ -405,9 +432,11 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/noise_time_histogram.png", dpi=300)
-    plt.savefig("images/noise_time_histogram.svg", format='svg')
-
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)
+    plt.savefig(f"{image_filepath}/noise_time_histogram.png", dpi=300)
+    plt.savefig(f"{image_filepath}/noise_time_histogram.svg", format='svg')
 
 
 # ==============================
@@ -474,9 +503,11 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/instantaneous_frequency_comparison_subplots.png", dpi=300)
-    plt.savefig("images/instantaneous_frequency_comparison_subplots.svg", format='svg')
-    
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)
+    plt.savefig(f"{image_filepath}/instantaneous_frequency_comparison_subplots.png", dpi=300)
+    plt.savefig(f"{image_filepath}/instantaneous_frequency_comparison_subplots.svg", format='svg')    
     
     
 
@@ -491,7 +522,7 @@ max_freq = np.max(inst_freq_analytic_trim)
 median_freq = np.median(inst_freq_analytic_trim)
 
 # Print statistics
-print("Instantaneous Frequency Statistics (Hilbert Transform):")
+print(f"Instantaneous Frequency Statistics Model: {model_type}:")
 print(f"Mean: {mean_freq:.2f} Hz")
 print(f"Standard Deviation: {std_freq:.2f} Hz")
 print(f"Minimum: {min_freq:.2f} Hz")
@@ -512,6 +543,8 @@ plt.tight_layout()
 if show_plots:
     plt.show()
 if save_plots:
-    plt.savefig("images/inst_freq_analytic_histogram.png", dpi=300)
-    plt.savefig("images/inst_freq_analytic_histogram.svg", format='svg')
-
+    image_filepath = f"images/{model_type}"
+    if not os.path.exists(image_filepath):
+        os.makedirs(image_filepath)
+    plt.savefig(f"{image_filepath}/inst_freq_analytic_histogram.png", dpi=300)
+    plt.savefig(f"{image_filepath}/inst_freq_analytic_histogram.svg", format='svg')

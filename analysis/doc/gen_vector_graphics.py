@@ -142,8 +142,8 @@ def create_complex_vector_animation(
         max_val = amplitude_base + abs(amplitude_mod) + 0.5
         ax.set_xlim(-max_val, max_val)
         ax.set_ylim(-max_val, max_val)
-        ax.set_xlabel("Real (X coordinate)")
-        ax.set_ylabel("Imaginary (Y coordinate)")
+        ax.set_xlabel("Real (x-coordinate)")
+        ax.set_ylabel("Imaginary (y-coordinate)")
         ax.set_aspect('equal')
         
         circle = plt.Circle((0, 0), amplitude_base, color='gray', fill=False, linestyle='--')
@@ -178,7 +178,7 @@ def create_complex_vector_animation(
         ax.set_xlim(xlim)
         ax.set_ylim(real_ylim)
         ax.set_xlabel(time_label)
-        ax.set_ylabel("Real (X coordinate) Value")
+        ax.set_ylabel("Real (x-coordinate) Value")
         ax.grid(True)
 
         # Imaginary Component Time-Domain Plot (if enabled).
@@ -189,7 +189,7 @@ def create_complex_vector_animation(
             ax.set_xlim(xlim)
             ax.set_ylim(imag_ylim)
             ax.set_xlabel(time_label)
-            ax.set_ylabel("Imaginary (Y coordinate) Value")
+            ax.set_ylabel("Imaginary (y-coordinate) Value")
             ax.grid(True)
         
         fig.canvas.draw()
@@ -197,7 +197,7 @@ def create_complex_vector_animation(
         frames_list.append(image)
         plt.close(fig)
     
-    imageio.mimsave(filename, frames_list, fps=fps)
+    imageio.mimsave(filename, frames_list, fps=fps, loop=0)
     print(f"Animation saved as {filename}")
 
 
@@ -308,15 +308,15 @@ def create_real_signal_and_positive_negative_complex_vectors_animation(
         ax_time.set_xlim(xlim)
         ax_time.set_ylim(real_ylim)
         ax_time.set_xlabel(time_label)
-        ax_time.set_ylabel("Real (X coordinate) Value")
+        ax_time.set_ylabel("Real (x-coordinate) Value")
         ax_time.grid(True)
         
         ax_complex.set_xlim(- (amplitude_base + abs(amplitude_mod) + 0.5),
                             amplitude_base + abs(amplitude_mod) + 0.5)
         ax_complex.set_ylim(- (amplitude_base + abs(amplitude_mod) + 0.5),
                             amplitude_base + abs(amplitude_mod) + 0.5)
-        ax_complex.set_xlabel("Real (X coordinate)")
-        ax_complex.set_ylabel("Imaginary (Y coordinate)")
+        ax_complex.set_xlabel("Real (x-coordinate)")
+        ax_complex.set_ylabel("Imaginary (y-coordinate)")
         ax_complex.set_aspect('equal')
         circle = plt.Circle((0, 0), amplitude_base, color='gray', fill=False, linestyle='--')
         ax_complex.add_artist(circle)
@@ -343,7 +343,7 @@ def create_real_signal_and_positive_negative_complex_vectors_animation(
         frames_list.append(image)
         plt.close(fig)
     
-    imageio.mimsave(filename, frames_list, fps=fps)
+    imageio.mimsave(filename, frames_list, fps=fps, loop=0)
     print(f"Animation saved as {filename}")
 
 
@@ -374,6 +374,19 @@ if __name__ == '__main__':
                                     time_plot_position='below',
                                     plot_imag_time=False,
                                     figure_number=3)    
+
+    create_complex_vector_animation("images/fig3extra_complex_vector_freq_ramp_animation.gif",
+                                    num_frames=120,
+                                    initial_phase_step=0.1,
+                                    frequency_ramp=0.2,
+                                    amplitude_base=1.0,
+                                    amplitude_mod=0.4,
+                                    mod_rate=2,
+                                    f0=12000,
+                                    fps=6,
+                                    time_plot_position='below',
+                                    plot_imag_time=True,
+                                    figure_number=3)   
 
     create_real_signal_and_positive_negative_complex_vectors_animation("images/fig4_real_signal_and_positive_negative_complex_vectors.gif", 
                                     num_frames=120,

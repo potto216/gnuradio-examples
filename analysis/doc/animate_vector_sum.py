@@ -45,9 +45,9 @@ def animate_complex_vectors(num_vectors=5, frames=200, interval=50, save_path='a
     lim = sum(amplitudes) + 0.5
     ax.set_xlim(-lim, lim)
     ax.set_ylim(-lim, lim)
-    ax.set_xlabel("Real")
-    ax.set_ylabel("Imaginary")
-    ax.set_title("Rotating Vectors Demonstration")
+    ax.set_xlabel("Real (x-coordinate) Value")
+    ax.set_ylabel("Imaginary (y-coordinate) Value")
+    ax.set_title("Figure 7: Fourier Series Approximation of a Signal Vector")
     
     # Create line objects for each red vector and one for the black total vector
     #red_lines = [ax.plot([], [], 'r-', lw=2)[0] for _ in range(num_vectors)]
@@ -93,4 +93,4 @@ def animate_complex_vectors(num_vectors=5, frames=200, interval=50, save_path='a
 
 # Example usage:
 if __name__ == '__main__':
-    animate_complex_vectors(num_vectors=4, frames=300, interval=40, save_path='images/compare_complex_vectors_summed.gif')
+    animate_complex_vectors(num_vectors=4, frames=300, interval=40, save_path='images/fig7_compare_complex_vectors_summed.gif')
