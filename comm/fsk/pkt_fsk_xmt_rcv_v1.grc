@@ -495,9 +495,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1320, 832.0]
+    coordinate: [1360, 632.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: blocks_null_sink_0_0
   id: blocks_null_sink
   parameters:
@@ -514,7 +514,7 @@ blocks:
     bus_structure: null
     coordinate: [1200, 1024.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: blocks_null_sink_1
   id: blocks_null_sink
   parameters:
@@ -626,7 +626,7 @@ blocks:
     bus_structure: null
     coordinate: [960, 952.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: blocks_tagged_stream_mux_0_0
   id: blocks_tagged_stream_mux
   parameters:
@@ -646,7 +646,7 @@ blocks:
     bus_structure: null
     coordinate: [1128, 744.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: blocks_uchar_to_float_0
   id: blocks_uchar_to_float
   parameters:
@@ -761,7 +761,7 @@ blocks:
     bus_structure: null
     coordinate: [432, 960.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: digital_crc32_bb_0_0
   id: digital_crc32_bb
   parameters:
@@ -802,7 +802,7 @@ blocks:
     bus_structure: null
     coordinate: [384, 752.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: digital_protocol_formatter_async_0
   id: digital_protocol_formatter_async
   parameters:
@@ -818,7 +818,7 @@ blocks:
     bus_structure: null
     coordinate: [608, 744.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: digital_protocol_formatter_bb_0
   id: digital_protocol_formatter_bb
   parameters:
@@ -835,7 +835,7 @@ blocks:
     bus_structure: null
     coordinate: [680, 904.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: digital_symbol_sync_xx_0
   id: digital_symbol_sync_xx
   parameters:
@@ -944,7 +944,7 @@ blocks:
     bus_structure: null
     coordinate: [96, 744.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: epy_block_0_0
   id: epy_block
   parameters:
@@ -1030,7 +1030,7 @@ blocks:
     bus_structure: null
     coordinate: [120, 968.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: freq_xlating_fir_filter_xxx_0
   id: freq_xlating_fir_filter_xxx
   parameters:
@@ -1124,7 +1124,7 @@ blocks:
     bus_structure: null
     coordinate: [880, 736.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: pdu_pdu_to_tagged_stream_0_0
   id: pdu_pdu_to_tagged_stream
   parameters:
@@ -1141,7 +1141,7 @@ blocks:
     bus_structure: null
     coordinate: [880, 832.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: qtgui_time_sink_x_0
   id: qtgui_time_sink_x
   parameters:
@@ -1774,7 +1774,7 @@ blocks:
     bus_structure: null
     coordinate: [1192, 960.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: virtual_sink_0_0_0
   id: virtual_sink
   parameters:
@@ -1811,9 +1811,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1352, 752.0]
+    coordinate: [1456, 840.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: virtual_source_0
   id: virtual_source
   parameters:
