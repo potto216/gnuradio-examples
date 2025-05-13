@@ -1,6 +1,6 @@
 options:
   parameters:
-    author: ''
+    author: Paul Otto
     catch_exceptions: 'True'
     category: '[GRC Hier Blocks]'
     cmake_opt: ''
@@ -11,7 +11,7 @@ options:
     gen_linking: dynamic
     generate_options: qt_gui
     hier_block_src_path: '.:'
-    id: default
+    id: zmq_push_pull_test
     max_nouts: '0'
     output_language: python
     placement: (0,0)
@@ -22,7 +22,7 @@ options:
     run_options: prompt
     sizing_mode: fixed
     thread_safe_setters: ''
-    title: zmq_push_pull_test
+    title: ZMQ Push Pull
     window_size: (1000,1000)
   states:
     bus_sink: false
@@ -57,17 +57,17 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [720, 328.0]
+    coordinate: [376, 360.0]
     rotation: 0
     state: enabled
 - name: zeromq_pull_msg_source_0
   id: zeromq_pull_msg_source
   parameters:
-    address: ''
+    address: tcp://127.0.0.1:5555
     affinity: ''
     alias: ''
     bind: 'False'
-    comment: ''
+    comment: Bind = False
     maxoutbuf: '0'
     minoutbuf: '0'
     timeout: '100'
@@ -75,23 +75,23 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [304, 224.0]
+    coordinate: [112, 160.0]
     rotation: 0
     state: enabled
 - name: zeromq_push_msg_sink_0
   id: zeromq_push_msg_sink
   parameters:
-    address: ''
+    address: tcp://127.0.0.1:5556
     affinity: ''
     alias: ''
     bind: 'True'
-    comment: ''
+    comment: Bind = True
     timeout: '100'
   states:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [808, 224.0]
+    coordinate: [520, 160.0]
     rotation: 0
     state: enabled
 
