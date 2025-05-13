@@ -1,0 +1,1120 @@
+options:
+  parameters:
+    author: Barry Duggan
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: 'Source: https://github.com/duggabe/gr-control/blob/main/Transmitters/pkt_fsk_xmt_rcv.grc'
+    copyright: ''
+    description: packet FSK xmt rcv v1
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: qt_gui
+    hier_block_src_path: '.:'
+    id: pkt_fsk_xmt_rcv_v1
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: pkt_fsk_xmt_rcv_v1
+    window_size: (1000,1000)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [16, 12.0]
+    rotation: 0
+    state: enabled
+
+blocks:
+- name: access_key
+  id: variable
+  parameters:
+    comment: ''
+    value: '''11100001010110101110100010010011'''
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [856, 12.0]
+    rotation: 0
+    state: enabled
+- name: baud
+  id: variable
+  parameters:
+    comment: ''
+    value: '100'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [280, 12.0]
+    rotation: 0
+    state: true
+- name: center
+  id: variable
+  parameters:
+    comment: ''
+    value: (mark+space)/2
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [240, 124.0]
+    rotation: 0
+    state: enabled
+- name: decim
+  id: variable
+  parameters:
+    comment: ''
+    value: '20'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [824, 224.0]
+    rotation: 0
+    state: true
+- name: fsk_deviation
+  id: variable
+  parameters:
+    comment: ''
+    value: (abs)(mark-space)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [408, 124.0]
+    rotation: 0
+    state: enabled
+- name: hdr_format
+  id: variable
+  parameters:
+    comment: header_format_default
+    value: digital.header_format_default(access_key, 0)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [856, 88.0]
+    rotation: 0
+    state: enabled
+- name: inp_amp
+  id: variable
+  parameters:
+    comment: ''
+    value: (mark/vco_max)-vco_offset
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [712, 124.0]
+    rotation: 0
+    state: true
+- name: mark
+  id: variable
+  parameters:
+    comment: ''
+    value: '1200'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [368, 12.0]
+    rotation: 0
+    state: true
+- name: phase_bw
+  id: variable
+  parameters:
+    comment: ''
+    value: math.pi/32
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [904, 224.0]
+    rotation: 0
+    state: true
+- name: repeat
+  id: variable
+  parameters:
+    comment: ''
+    value: (int)(samp_rate/baud)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [328, 124.0]
+    rotation: 0
+    state: true
+- name: reverse
+  id: variable_qtgui_chooser
+  parameters:
+    comment: 0,0,1,1
+    gui_hint: 0,0,1,1
+    label: ''
+    label0: Normal
+    label1: Reverse
+    label2: ''
+    label3: ''
+    label4: ''
+    labels: '[]'
+    num_opts: '2'
+    option0: '1'
+    option1: '-1'
+    option2: '2'
+    option3: '3'
+    option4: '4'
+    options: '[0, 1, 2]'
+    orient: Qt.QVBoxLayout
+    type: int
+    value: '-1'
+    widget: radio_buttons
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1248, 212.0]
+    rotation: 0
+    state: enabled
+- name: samp_rate
+  id: variable
+  parameters:
+    comment: '|----------------------------------------------------------------------------------------->
+
+      User set values'
+    value: '44100'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [184, 12.0]
+    rotation: 0
+    state: enabled
+- name: space
+  id: variable
+  parameters:
+    comment: ''
+    value: '2200'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [448, 12.0]
+    rotation: 0
+    state: true
+- name: sps
+  id: variable
+  parameters:
+    comment: ''
+    value: (int)(repeat/decim)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1016, 224.0]
+    rotation: 0
+    state: enabled
+- name: sq_lvl
+  id: variable_qtgui_range
+  parameters:
+    comment: 0,1,1,1
+    gui_hint: 0,1,1,1
+    label: Squelch
+    min_len: '200'
+    orient: QtCore.Qt.Horizontal
+    rangeType: float
+    start: '-100'
+    step: '5'
+    stop: '0'
+    value: '-50'
+    widget: counter
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1368, 216.0]
+    rotation: 0
+    state: enabled
+- name: thresh
+  id: variable
+  parameters:
+    comment: ''
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [528, 12.0]
+    rotation: 0
+    state: enabled
+- name: vco_max
+  id: variable
+  parameters:
+    comment: ''
+    value: center+fsk_deviation
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [512, 124.0]
+    rotation: 0
+    state: true
+- name: vco_offset
+  id: variable
+  parameters:
+    comment: ''
+    value: space/vco_max
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [600, 124.0]
+    rotation: 0
+    state: true
+- name: InFile
+  id: parameter
+  parameters:
+    alias: ''
+    comment: 'Filename is specified on the command line, e.g.:
+
+      python3 pkt_fsk_xmt.py --InFile="../gr-logo.png"'
+    hide: none
+    label: File Name
+    short_id: ''
+    type: str
+    value: /home/user/data/simple_file.txt
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1040, 12.0]
+    rotation: 0
+    state: true
+- name: analog_sig_source_x_0
+  id: analog_sig_source_x
+  parameters:
+    affinity: ''
+    alias: ''
+    amp: '255'
+    comment: ''
+    freq: '10'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    offset: '0'
+    phase: '0'
+    samp_rate: samp_rate
+    showports: 'False'
+    type: byte
+    waveform: analog.GR_TRI_WAVE
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [136, 824.0]
+    rotation: 0
+    state: disabled
+- name: audio_sink_0
+  id: audio_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    device_name: ''
+    num_inputs: '1'
+    ok_to_block: 'True'
+    samp_rate: samp_rate
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1232, 1280.0]
+    rotation: 0
+    state: enabled
+- name: blocks_add_const_vxx_0
+  id: blocks_add_const_vxx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: vco_offset
+    const: vco_offset
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    type: float
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [456, 1280.0]
+    rotation: 0
+    state: true
+- name: blocks_multiply_const_vxx_0
+  id: blocks_multiply_const_vxx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: inp_amp
+    const: inp_amp
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    type: float
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [272, 1280.0]
+    rotation: 0
+    state: true
+- name: blocks_null_sink_0
+  id: blocks_null_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    bus_structure_sink: '[[0,],]'
+    comment: ''
+    num_inputs: '1'
+    type: byte
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1320, 832.0]
+    rotation: 0
+    state: disabled
+- name: blocks_null_sink_0_0
+  id: blocks_null_sink
+  parameters:
+    affinity: ''
+    alias: ''
+    bus_structure_sink: '[[0,],]'
+    comment: ''
+    num_inputs: '1'
+    type: byte
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1200, 1024.0]
+    rotation: 0
+    state: enabled
+- name: blocks_repack_bits_bb_1_0
+  id: blocks_repack_bits_bb
+  parameters:
+    affinity: ''
+    alias: ''
+    align_output: 'False'
+    comment: ''
+    endianness: gr.GR_MSB_FIRST
+    k: '8'
+    l: '1'
+    len_tag_key: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [264, 1112.0]
+    rotation: 0
+    state: true
+- name: blocks_repeat_0
+  id: blocks_repeat
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    interp: repeat
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    type: byte
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [480, 1120.0]
+    rotation: 0
+    state: enabled
+- name: blocks_tagged_stream_mux_0
+  id: blocks_tagged_stream_mux
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    lengthtagname: packet_len
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    ninputs: '2'
+    tag_preserve_head_pos: '0'
+    type: byte
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [960, 952.0]
+    rotation: 0
+    state: enabled
+- name: blocks_tagged_stream_mux_0_0
+  id: blocks_tagged_stream_mux
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    lengthtagname: packet_len
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    ninputs: '2'
+    tag_preserve_head_pos: '0'
+    type: byte
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1128, 744.0]
+    rotation: 0
+    state: disabled
+- name: blocks_uchar_to_float_0
+  id: blocks_uchar_to_float
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [664, 1128.0]
+    rotation: 0
+    state: enabled
+- name: blocks_vco_f_0
+  id: blocks_vco_f
+  parameters:
+    affinity: ''
+    alias: ''
+    amplitude: '0.25'
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    samp_rate: samp_rate
+    sensitivity: 2*math.pi*vco_max
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [632, 1264.0]
+    rotation: 0
+    state: enabled
+- name: digital_crc32_bb_0
+  id: digital_crc32_bb
+  parameters:
+    affinity: ''
+    alias: ''
+    check: 'False'
+    comment: ''
+    lengthtagname: '"packet_len"'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    packed: 'True'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [432, 960.0]
+    rotation: 0
+    state: enabled
+- name: digital_crc_append_0
+  id: digital_crc_append
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    final_xor: '0xFFFFFFFF'
+    initial_value: '0xFFFFFFFF'
+    input_reflected: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_bits: '32'
+    poly: '0x4C11DB7'
+    result_reflected: 'True'
+    skip_header_bytes: '0'
+    swap_endianness: 'False'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [384, 752.0]
+    rotation: 0
+    state: disabled
+- name: digital_protocol_formatter_async_0
+  id: digital_protocol_formatter_async
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    format: hdr_format
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [608, 744.0]
+    rotation: 0
+    state: disabled
+- name: digital_protocol_formatter_bb_0
+  id: digital_protocol_formatter_bb
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    format: hdr_format
+    len_tag_key: '"packet_len"'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [680, 904.0]
+    rotation: 0
+    state: enabled
+- name: epy_block_0
+  id: epy_block
+  parameters:
+    FileName: InFile
+    Pkt_len: '75'
+    _source_code: "\"\"\"\nEmbedded Python Block: File Source to Message PDUs\n\"\"\
+      \"\n\nimport numpy as np\nfrom gnuradio import gr\nimport time\nimport pmt\n\
+      import os.path\nimport sys\nimport base64\nimport threading  # Add Python's\
+      \ threading module\n\nclass blk(gr.basic_block):\n    def __init__(self, FileName='None',\
+      \ Pkt_len=52):\n        gr.basic_block.__init__(\n            self,\n      \
+      \      name='EPB: File Source to Message PDUs',\n            in_sig=None,\n\
+      \            out_sig=None)\n        \n        # Define message port\n      \
+      \  self.message_port_register_out(pmt.intern('pdus'))\n        \n        self.FileName\
+      \ = FileName\n        self.Pkt_len = Pkt_len\n        self.state = 0\n     \
+      \   self.pre_count = 0\n        self._debug = 0\n        \n        if (os.path.exists(self.FileName)):\n\
+      \            # open input file\n            self.f_in = open(self.FileName,\
+      \ 'rb')\n            self._eof = False\n            if (self._debug):\n    \
+      \            print(\"File name:\", self.FileName)\n        else:\n         \
+      \   print(self.FileName, 'does not exist')\n            self._eof = True\n \
+      \           self.state = 3\n\n        self.char_list = [37,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,\
+      \ \n                          85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,\
+      \ \n                          85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,\
+      \ \n                          85,85,85,93]\n        self.c_len = len(self.char_list)\n\
+      \        \n        # Start processing\n        self.start()\n\n    def send_pdu(self,\
+      \ data_array):\n        # Convert numpy array to PMT vector\n        data_pmt\
+      \ = pmt.init_u8vector(len(data_array), data_array)\n        # Create empty metadata\
+      \ dictionary PMT\n        meta = pmt.make_dict()\n        # Create the PDU as\
+      \ pair of (metadata, data)\n        pdu = pmt.cons(meta, data_pmt)\n       \
+      \ # Publish the message\n        self.message_port_pub(pmt.intern('pdus'), pdu)\n\
+      \n    def start(self):\n        # Use Python's threading module instead of gr.thread\n\
+      \        self._thread = threading.Thread(target=self.run)\n        self._thread.daemon\
+      \ = True\n        self._thread.start()\n        return True\n\n    # The rest\
+      \ of the code remains unchanged\n    def run(self):\n        while True:\n \
+      \           if self.state == 0:\n                # send phasing filler\n   \
+      \             # delay 40 ms\n                time.sleep(0.040)\n           \
+      \     data = np.array(self.char_list, dtype=np.uint8)\n                self.send_pdu(data)\n\
+      \                \n                self.pre_count += 1\n                if (self.pre_count\
+      \ > 3):\n                    self.state = 1\n                    \n        \
+      \    elif self.state == 1:\n                # Rest of the method remains unchanged\n\
+      \                if not self._eof:\n                    buff = self.f_in.read(self.Pkt_len)\n\
+      \                    b_len = len(buff)\n                    if b_len == 0:\n\
+      \                        print('End of file')\n                        self._eof\
+      \ = True\n                        self.f_in.close()\n                      \
+      \  self.state = 2\n                        self.pre_count = 0\n            \
+      \        else:\n                        # convert to Base64\n              \
+      \          encoded = base64.b64encode(buff)\n                        if (self._debug):\n\
+      \                            print('b64 length =', len(encoded))\n         \
+      \               # delay 500 ms\n                        time.sleep(0.5)\n  \
+      \                      data = np.frombuffer(encoded, dtype=np.uint8)\n     \
+      \                   self.send_pdu(data)\n                else:\n           \
+      \         self.state = 2\n                    \n            elif self.state\
+      \ == 2:\n                # send file name\n                header = np.array(self.char_list[0:8],\
+      \ dtype=np.uint8)\n                filename = np.array([ord(c) for c in self.FileName],\
+      \ dtype=np.uint8)\n                data = np.concatenate((header, filename))\n\
+      \                self.send_pdu(data)\n                self.state = 3\n     \
+      \           \n            elif self.state == 3:\n                # send post\
+      \ filler\n                # delay 10 ms\n                time.sleep(0.010)\n\
+      \                data = np.array(self.char_list, dtype=np.uint8)\n         \
+      \       self.send_pdu(data)\n                \n                self.pre_count\
+      \ += 1\n                if (self.pre_count > 9):\n                    self.state\
+      \ = 4\n                    \n            elif self.state == 4:\n           \
+      \     # delay 10 sec\n                time.sleep(10.0)\n                print(\"\
+      End of transmission\")\n                self.state = 5\n                \n \
+      \           elif self.state == 5:\n                # Finished processing, just\
+      \ sleep\n                time.sleep(1.0)\n"
+    affinity: ''
+    alias: ''
+    comment: 'Filename is specified on the command line, e.g.:
+
+      python3 pkt_fsk_xmt.py --InFile="../gr-logo.png"'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: '(''EPB: File Source to Message PDUs'', ''blk'', [(''FileName'', "''None''"),
+      (''Pkt_len'', ''52'')], [], [(''pdus'', ''message'', 1)], '''', [''FileName'',
+      ''Pkt_len''])'
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [96, 744.0]
+    rotation: 0
+    state: disabled
+- name: epy_block_0_0
+  id: epy_block
+  parameters:
+    FileName: InFile
+    Pkt_len: '10'
+    _source_code: "\"\"\"\nEmbedded Python Block: File Source to Tagged Stream\n\"\
+      \"\"\n\nimport numpy as np\nfrom gnuradio import gr\nimport time\nimport pmt\n\
+      import os.path\nimport sys\nimport base64\n\nclass blk(gr.sync_block):\n   \
+      \ def __init__(self, FileName='None', Pkt_len=52):\n        gr.sync_block.__init__(\n\
+      \            self,\n            name='EPB: File Source to Tagged Stream',\n\
+      \            in_sig=None,\n            out_sig=[np.uint8])\n        self.FileName\
+      \ = FileName\n        self.Pkt_len = Pkt_len\n        self.state = 0\n     \
+      \   self.pre_count = 0\n        self.indx = 0\n        self._debug = 0\n   \
+      \     if (os.path.exists(self.FileName)):\n            # open input file\n \
+      \           self.f_in = open (self.FileName, 'rb')\n            self._eof =\
+      \ False\n            if (self._debug):\n                print (\"File name:\"\
+      , self.FileName)\n        else:\n            print(self.FileName, 'does not\
+      \ exist')\n            self._eof = True\n            self.state = 3\n\n    \
+      \    self.char_list = [37,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85, 85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,\
+      \ 85,85,85,85,85,85,85,85,85,85,85,85,85,85,85,85, 85,85,85,93]\n        self.c_len\
+      \ = len (self.char_list)\n        # print (self.c_len)\n\n    def work(self,\
+      \ input_items, output_items):\n        if (self.state == 0):\n            #\
+      \ send phasing filler\n            # delay 40 ms\n            ##time.sleep (0.040)\n\
+      \            key1 = pmt.intern(\"packet_len\")\n            val1 = pmt.from_long(self.c_len)\n\
+      \            self.add_item_tag(0, # Write to output port 0\n               \
+      \ self.indx,   # Index of the tag\n                key1,   # Key of the tag\n\
+      \                val1    # Value of the tag\n                )\n           \
+      \ self.indx += self.c_len\n            i = 0\n            while (i < self.c_len):\n\
+      \                output_items[0][i] = self.char_list[i]\n                i +=\
+      \ 1\n            self.pre_count += 1\n            if (self.pre_count > 3):\n\
+      \                self.state = 1\n            return (self.c_len)\n        elif\
+      \ (self.state == 1):\n            while (not (self._eof)):\n               \
+      \ buff = self.f_in.read (self.Pkt_len)\n                b_len = len(buff)\n\
+      \                if b_len == 0:\n                    print ('End of file')\n\
+      \                    self._eof = True\n                    self.f_in.close()\n\
+      \                    self.state = 2\n                    self.pre_count = 0\n\
+      \                    break\n                # convert to Base64\n          \
+      \      encoded = base64.b64encode (buff)\n                e_len = len(encoded)\n\
+      \                if (self._debug):\n                    print ('b64 length =',\
+      \ e_len)\n                # delay 500 ms\n                ##time.sleep (0.5)\n\
+      \                key0 = pmt.intern(\"packet_len\")\n                val0 = pmt.from_long(e_len)\n\
+      \                self.add_item_tag(0, # Write to output port 0\n           \
+      \         self.indx,   # Index of the tag\n                    key0,   # Key\
+      \ of the tag\n                    val0    # Value of the tag\n             \
+      \       )\n                self.indx += e_len\n                i = 0\n     \
+      \           while (i < e_len):\n                    output_items[0][i] = encoded[i]\n\
+      \                    i += 1\n                return (e_len)\n        elif (self.state\
+      \ == 2):\n            # send file name\n            fn_len = len (self.FileName)\n\
+      \            key1 = pmt.intern(\"packet_len\")\n            val1 = pmt.from_long(fn_len+8)\n\
+      \            self.add_item_tag(0, # Write to output port 0\n               \
+      \ self.indx,   # Index of the tag\n                key1,   # Key of the tag\n\
+      \                val1    # Value of the tag\n                )\n           \
+      \ self.indx += (fn_len+8)\n            i = 0\n            while (i < 8):\n \
+      \               output_items[0][i] = self.char_list[i]\n                i +=\
+      \ 1\n            j = 0\n            while (i < (fn_len+8)):\n              \
+      \  output_items[0][i] = ord(self.FileName[j])\n                i += 1\n    \
+      \            j += 1\n            self.state = 3\n            return (fn_len+8)\n\
+      \        elif (self.state == 3):\n            # send post filler\n         \
+      \   # delay 10 ms\n            ##time.sleep (0.010)\n            key1 = pmt.intern(\"\
+      packet_len\")\n            val1 = pmt.from_long(self.c_len)\n            self.add_item_tag(0,\
+      \ # Write to output port 0\n                self.indx,   # Index of the tag\n\
+      \                key1,   # Key of the tag\n                val1    # Value of\
+      \ the tag\n                )\n            self.indx += self.c_len\n        \
+      \    i = 0\n            while (i < self.c_len):\n                output_items[0][i]\
+      \ = self.char_list[i]\n                i += 1\n            self.pre_count +=\
+      \ 1\n            if (self.pre_count > 9):\n                self.state = 4\n\
+      \            return (self.c_len)\n        elif (self.state == 4):\n        \
+      \    # delay 10 sec\n           ## time.sleep (10.0)\n            print (\"\
+      End of transmission\")\n            self.state = 5\n            return (0)\n\
+      \        return (0)\n\n"
+    affinity: ''
+    alias: ''
+    comment: 'Filename is specified on the command line, e.g.:
+
+      python3 pkt_fsk_xmt.py --InFile="../gr-logo.png"'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: '(''EPB: File Source to Tagged Stream'', ''blk'', [(''FileName'', "''None''"),
+      (''Pkt_len'', ''52'')], [], [(''0'', ''byte'', 1)], '''', [''FileName'', ''Pkt_len''])'
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [120, 968.0]
+    rotation: 0
+    state: enabled
+- name: import_0
+  id: import
+  parameters:
+    alias: ''
+    comment: ''
+    imports: import math
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [16, 136.0]
+    rotation: 0
+    state: enabled
+- name: note_0
+  id: note
+  parameters:
+    alias: ''
+    comment: '|----------------------------------------------------------------------------------------------------------------------------------------------------------|
+
+      Calculated values:
+
+      -   center freq = (mark+space)/2
+
+      -   repeat = (int)(samp_rate/baud)
+
+      -   fsk_deviation = (abs)(mark-space)
+
+      -   vco_max = center+fsk_deviation
+
+      -   vco_offset = space/vco_max
+
+      -   inp_amp = (mark/vco_max)-vco_offset
+
+      -   vco sensitivity = 2*math.pi*vco_max'
+    note: ''
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [184, 148.0]
+    rotation: 0
+    state: enabled
+- name: note_0_0
+  id: note
+  parameters:
+    alias: ''
+    comment: "|----------------------------------------------------------------------------------------->\n\
+      Calculated values:\n-   sps = (int)(repeat/decim)\n-  decim = \n-   Quad Demod\
+      \ Gain = samp_rate/(2*math.pi*fsk_deviation)"
+    note: ''
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [760, 232.0]
+    rotation: 0
+    state: enabled
+- name: pdu_pdu_to_tagged_stream_0
+  id: pdu_pdu_to_tagged_stream
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: Header
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    tag: packet_len
+    type: byte
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [880, 736.0]
+    rotation: 0
+    state: disabled
+- name: pdu_pdu_to_tagged_stream_0_0
+  id: pdu_pdu_to_tagged_stream
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: Payload
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    tag: packet_len
+    type: byte
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [880, 832.0]
+    rotation: 0
+    state: disabled
+- name: qtgui_time_sink_x_0
+  id: qtgui_time_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'False'
+    axislabels: 'True'
+    color1: blue
+    color10: dark blue
+    color2: red
+    color3: green
+    color4: black
+    color5: cyan
+    color6: magenta
+    color7: yellow
+    color8: dark red
+    color9: dark green
+    comment: 1,0,1,3
+    ctrlpanel: 'False'
+    entags: 'True'
+    grid: 'False'
+    gui_hint: 1,0,1,3
+    label1: ''
+    label10: ''
+    label2: ''
+    label3: ''
+    label4: ''
+    label5: ''
+    label6: ''
+    label7: ''
+    label8: ''
+    label9: ''
+    legend: 'True'
+    marker1: '-1'
+    marker10: '-1'
+    marker2: '-1'
+    marker3: '-1'
+    marker4: '-1'
+    marker5: '-1'
+    marker6: '-1'
+    marker7: '-1'
+    marker8: '-1'
+    marker9: '-1'
+    name: Transmit data
+    nconnections: '1'
+    size: '2048'
+    srate: samp_rate
+    stemplot: 'False'
+    style1: '1'
+    style10: '1'
+    style2: '1'
+    style3: '1'
+    style4: '1'
+    style5: '1'
+    style6: '1'
+    style7: '1'
+    style8: '1'
+    style9: '1'
+    tr_chan: '0'
+    tr_delay: '0.0'
+    tr_level: '0.1'
+    tr_mode: qtgui.TRIG_MODE_NORM
+    tr_slope: qtgui.TRIG_SLOPE_POS
+    tr_tag: '"packet_len"'
+    type: float
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    ylabel: Amplitude
+    ymax: '1.1'
+    ymin: '-0.1'
+    yunit: '""'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [848, 1048.0]
+    rotation: 0
+    state: disabled
+- name: qtgui_waterfall_sink_x_0
+  id: qtgui_waterfall_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    axislabels: 'True'
+    bw: samp_rate
+    color1: '0'
+    color10: '0'
+    color2: '0'
+    color3: '0'
+    color4: '0'
+    color5: '0'
+    color6: '0'
+    color7: '0'
+    color8: '0'
+    color9: '0'
+    comment: ''
+    fc: '0'
+    fftsize: '512'
+    freqhalf: 'True'
+    grid: 'False'
+    gui_hint: ''
+    int_max: '10'
+    int_min: '-60'
+    label1: ''
+    label10: ''
+    label2: ''
+    label3: ''
+    label4: ''
+    label5: ''
+    label6: ''
+    label7: ''
+    label8: ''
+    label9: ''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: TX
+    nconnections: '1'
+    showports: 'False'
+    type: float
+    update_time: '0.10'
+    wintype: window.WIN_BLACKMAN_hARRIS
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1240, 1136.0]
+    rotation: 0
+    state: enabled
+- name: virtual_sink_0
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: t2
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [864, 1168.0]
+    rotation: 0
+    state: true
+- name: virtual_sink_0_0
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: t1
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1192, 960.0]
+    rotation: 0
+    state: enabled
+- name: virtual_sink_0_0_1
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: t1
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [368, 864.0]
+    rotation: 0
+    state: disabled
+- name: virtual_sink_0_1
+  id: virtual_sink
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: t1
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1352, 752.0]
+    rotation: 0
+    state: disabled
+- name: virtual_source_0
+  id: virtual_source
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: t2
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [112, 1280.0]
+    rotation: 0
+    state: true
+- name: virtual_source_0_0
+  id: virtual_source
+  parameters:
+    alias: ''
+    comment: ''
+    stream_id: t1
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [96, 1120.0]
+    rotation: 0
+    state: true
+
+connections:
+- [analog_sig_source_x_0, '0', virtual_sink_0_0_1, '0']
+- [blocks_add_const_vxx_0, '0', blocks_vco_f_0, '0']
+- [blocks_multiply_const_vxx_0, '0', blocks_add_const_vxx_0, '0']
+- [blocks_repack_bits_bb_1_0, '0', blocks_repeat_0, '0']
+- [blocks_repeat_0, '0', blocks_uchar_to_float_0, '0']
+- [blocks_tagged_stream_mux_0, '0', blocks_null_sink_0_0, '0']
+- [blocks_tagged_stream_mux_0, '0', virtual_sink_0_0, '0']
+- [blocks_tagged_stream_mux_0_0, '0', blocks_null_sink_0, '0']
+- [blocks_tagged_stream_mux_0_0, '0', virtual_sink_0_1, '0']
+- [blocks_uchar_to_float_0, '0', qtgui_time_sink_x_0, '0']
+- [blocks_uchar_to_float_0, '0', virtual_sink_0, '0']
+- [blocks_vco_f_0, '0', audio_sink_0, '0']
+- [blocks_vco_f_0, '0', qtgui_waterfall_sink_x_0, '0']
+- [digital_crc32_bb_0, '0', blocks_tagged_stream_mux_0, '1']
+- [digital_crc32_bb_0, '0', digital_protocol_formatter_bb_0, '0']
+- [digital_crc_append_0, out, digital_protocol_formatter_async_0, in]
+- [digital_protocol_formatter_async_0, header, pdu_pdu_to_tagged_stream_0, pdus]
+- [digital_protocol_formatter_async_0, payload, pdu_pdu_to_tagged_stream_0_0, pdus]
+- [digital_protocol_formatter_bb_0, '0', blocks_tagged_stream_mux_0, '0']
+- [epy_block_0, pdus, digital_crc_append_0, in]
+- [epy_block_0_0, '0', digital_crc32_bb_0, '0']
+- [pdu_pdu_to_tagged_stream_0, '0', blocks_tagged_stream_mux_0_0, '0']
+- [pdu_pdu_to_tagged_stream_0_0, '0', blocks_tagged_stream_mux_0_0, '1']
+- [virtual_source_0, '0', blocks_multiply_const_vxx_0, '0']
+- [virtual_source_0_0, '0', blocks_repack_bits_bb_1_0, '0']
+
+metadata:
+  file_format: 1
+  grc_version: 3.10.9.2
