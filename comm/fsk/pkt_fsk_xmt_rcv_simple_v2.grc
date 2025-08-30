@@ -284,7 +284,7 @@ blocks:
     bus_structure: null
     coordinate: [32, 360.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: audio_sink_0
   id: audio_sink
   parameters:
@@ -389,6 +389,23 @@ blocks:
     coordinate: [384, 760.0]
     rotation: 0
     state: true
+- name: blocks_char_to_float_0
+  id: blocks_char_to_float
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    scale: '1'
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [728, 1408.0]
+    rotation: 0
+    state: enabled
 - name: blocks_complex_to_mag_0
   id: blocks_complex_to_mag
   parameters:
@@ -439,23 +456,6 @@ blocks:
     coordinate: [200, 760.0]
     rotation: 0
     state: true
-- name: blocks_null_sink_0
-  id: blocks_null_sink
-  parameters:
-    affinity: ''
-    alias: ''
-    bus_structure_sink: '[[0,],]'
-    comment: ''
-    num_inputs: '1'
-    type: byte
-    vlen: '1'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [1392, 1320.0]
-    rotation: 0
-    state: enabled
 - name: blocks_repack_bits_bb_1_0
   id: blocks_repack_bits_bb
   parameters:
@@ -494,6 +494,26 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [192, 672.0]
+    rotation: 0
+    state: true
+- name: blocks_repack_bits_bb_1_0_0_0
+  id: blocks_repack_bits_bb
+  parameters:
+    affinity: ''
+    alias: ''
+    align_output: 'False'
+    comment: ''
+    endianness: gr.GR_MSB_FIRST
+    k: '1'
+    l: '8'
+    len_tag_key: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [496, 1400.0]
     rotation: 0
     state: true
 - name: blocks_repeat_0
@@ -547,8 +567,8 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1384, 1096.0]
-    rotation: 0
+    coordinate: [1392.0, 1264]
+    rotation: 270
     state: enabled
 - name: blocks_uchar_to_float_0
   id: blocks_uchar_to_float
@@ -603,6 +623,26 @@ blocks:
     coordinate: [24, 664.0]
     rotation: 0
     state: enabled
+- name: blocks_vector_source_x_0_0
+  id: blocks_vector_source_x
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    repeat: 'True'
+    tags: '[]'
+    type: byte
+    vector: (0x01, 0x02, 0x03, 0x04, 0x05, 0x06)
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [32, 448.0]
+    rotation: 0
+    state: enabled
 - name: blocks_xor_xx_0
   id: blocks_xor_xx
   parameters:
@@ -632,7 +672,61 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1424, 1232.0]
+    coordinate: [240, 1352.0]
+    rotation: 180
+    state: enabled
+- name: epy_block_0
+  id: epy_block
+  parameters:
+    _source_code: "\"\"\"\nEmbedded Python Blocks:\n\nEach time this file is saved,\
+      \ GRC will instantiate the first class it finds\nto get ports and parameters\
+      \ of your block. The arguments to __init__  will\nbe the parameters. All of\
+      \ them are required to have default values!\n\"\"\"\n\nimport numpy as np\n\
+      from gnuradio import gr\n\n\nclass ManchesterDecoder(gr.sync_block):\n    \"\
+      \"\"\n    In: stream of 0/1 at 2\xD7bit rate (half\u2010bit aligned)\n    Out:\
+      \ decoded bits at bit rate with sync acquisition and tracking\n    10 \u2192\
+      \ 0,   01 \u2192 1,   else \u2192 drop, reacquire on transition\n    \"\"\"\n\
+      \    def __init__(self):\n        gr.sync_block.__init__(\n            self,\n\
+      \            name=\"Manchester Decoder\",\n            in_sig=[np.uint8],\n\
+      \            out_sig=[np.uint8]\n        )\n        # State variables\n    \
+      \    self.locked = False       # whether synced to half-bit boundary\n     \
+      \   self.last_half = None     # store last half-bit if left over\n\n    def\
+      \ work(self, input_items, output_items):\n        inp = input_items[0]\n   \
+      \     out = output_items[0]\n        # Build a list for processing, prepending\
+      \ leftover half-bit\n        stream = []\n        if self.last_half is not None:\n\
+      \            stream.append(self.last_half)\n        stream.extend(int(x) for\
+      \ x in inp)\n\n        decoded = []\n        i = 0\n        while i + 1 < len(stream):\n\
+      \            a, b = stream[i], stream[i+1]\n            if not self.locked:\n\
+      \                # Search for first valid transition to acquire sync\n     \
+      \           if a != b:\n                    # Acquire lock and decode first\
+      \ symbol\n                    bit = 0 if (a==1 and b==0) else 1\n          \
+      \          decoded.append(bit)\n                    self.locked = True\n   \
+      \                 i += 2\n                else:\n                    i += 1\n\
+      \            else:\n                # Already locked, check each pair\n    \
+      \            if a != b:\n                    bit = 0 if (a==1 and b==0) else\
+      \ 1\n                    decoded.append(bit)\n                    i += 2\n \
+      \               else:\n                    # Lost sync, fall back to search\
+      \ mode\n                    self.locked = False\n                    i += 1\n\
+      \n        # If there's a leftover half-bit, save it\n        if i < len(stream):\n\
+      \            self.last_half = stream[i]\n        else:\n            self.last_half\
+      \ = None\n\n        # Output decoded bits up to available output buffer\n  \
+      \      n_out = min(len(decoded), len(out))\n        for j in range(n_out):\n\
+      \            out[j] = decoded[j]\n\n        return n_out\n\n"
+    affinity: ''
+    alias: ''
+    comment: ''
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    _io_cache: "('Manchester Decoder', 'ManchesterDecoder', [], [('0', 'byte', 1)],\
+      \ [('0', 'byte', 1)], '\\n    In: stream of 0/1 at 2\xD7bit rate (half\u2010\
+      bit aligned)\\n    Out: decoded bits at bit rate with sync acquisition and tracking\\\
+      n    10 \u2192 0,   01 \u2192 1,   else \u2192 drop, reacquire on transition\\\
+      n    ', [])"
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [224, 1416.0]
     rotation: 0
     state: enabled
 - name: import_0
@@ -656,7 +750,7 @@ blocks:
     beta: '6.76'
     comment: ''
     cutoff_freq: lpf_cutoff_Hz
-    decim: '100'
+    decim: repeat
     gain: '1'
     interp: '1'
     maxoutbuf: '0'
@@ -669,7 +763,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1144, 1012.0]
+    coordinate: [1136, 988.0]
     rotation: 0
     state: enabled
 - name: low_pass_filter_0_0
@@ -680,7 +774,7 @@ blocks:
     beta: '6.76'
     comment: ''
     cutoff_freq: lpf_cutoff_Hz
-    decim: '100'
+    decim: repeat
     gain: '1'
     interp: '1'
     maxoutbuf: '0'
@@ -918,6 +1012,103 @@ blocks:
     coordinate: [1368, 976.0]
     rotation: 0
     state: enabled
+- name: qtgui_time_sink_x_0_0
+  id: qtgui_time_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'False'
+    axislabels: 'True'
+    color1: blue
+    color10: dark blue
+    color2: red
+    color3: green
+    color4: black
+    color5: cyan
+    color6: magenta
+    color7: yellow
+    color8: dark red
+    color9: dark green
+    comment: ''
+    ctrlpanel: 'False'
+    entags: 'True'
+    grid: 'False'
+    gui_hint: ''
+    label1: Signal 1
+    label10: Signal 10
+    label2: Signal 2
+    label3: Signal 3
+    label4: Signal 4
+    label5: Signal 5
+    label6: Signal 6
+    label7: Signal 7
+    label8: Signal 8
+    label9: Signal 9
+    legend: 'True'
+    marker1: '0'
+    marker10: '-1'
+    marker2: '-1'
+    marker3: '-1'
+    marker4: '-1'
+    marker5: '-1'
+    marker6: '-1'
+    marker7: '-1'
+    marker8: '-1'
+    marker9: '-1'
+    name: '""'
+    nconnections: '1'
+    size: '32'
+    srate: samp_rate/(repeat*8)
+    stemplot: 'False'
+    style1: '1'
+    style10: '1'
+    style2: '1'
+    style3: '1'
+    style4: '1'
+    style5: '1'
+    style6: '1'
+    style7: '1'
+    style8: '1'
+    style9: '1'
+    tr_chan: '0'
+    tr_delay: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_slope: qtgui.TRIG_SLOPE_POS
+    tr_tag: '""'
+    type: float
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    ylabel: Amplitude
+    ymax: '256'
+    ymin: '-1'
+    yunit: '""'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [1192, 1392.0]
+    rotation: 0
+    state: enabled
 - name: virtual_sink_0
   id: virtual_sink
   parameters:
@@ -980,22 +1171,26 @@ connections:
 - [band_pass_filter_0_0, '0', blocks_complex_to_mag_0_0, '0']
 - [band_pass_filter_0_0, '0', qtgui_freq_sink_x_0, '1']
 - [blocks_add_const_vxx_0, '0', blocks_vco_f_0, '0']
+- [blocks_char_to_float_0, '0', qtgui_time_sink_x_0_0, '0']
 - [blocks_complex_to_mag_0, '0', low_pass_filter_0, '0']
 - [blocks_complex_to_mag_0_0, '0', low_pass_filter_0_0, '0']
 - [blocks_multiply_const_vxx_0, '0', blocks_add_const_vxx_0, '0']
 - [blocks_repack_bits_bb_1_0, '0', blocks_repeat_0, '0']
 - [blocks_repack_bits_bb_1_0_0, '0', blocks_repeat_0_0, '0']
+- [blocks_repack_bits_bb_1_0_0_0, '0', blocks_char_to_float_0, '0']
 - [blocks_repeat_0, '0', blocks_xor_xx_0, '0']
 - [blocks_repeat_0_0, '0', blocks_xor_xx_0, '1']
 - [blocks_sub_xx_0, '0', digital_binary_slicer_fb_0, '0']
 - [blocks_uchar_to_float_0, '0', virtual_sink_0, '0']
 - [blocks_vco_f_0, '0', audio_sink_0, '0']
 - [blocks_vector_source_x_0, '0', blocks_repack_bits_bb_1_0_0, '0']
+- [blocks_vector_source_x_0_0, '0', virtual_sink_0_0, '0']
 - [blocks_xor_xx_0, '0', blocks_uchar_to_float_0, '0']
-- [digital_binary_slicer_fb_0, '0', blocks_null_sink_0, '0']
-- [low_pass_filter_0, '0', blocks_sub_xx_0, '0']
+- [digital_binary_slicer_fb_0, '0', epy_block_0, '0']
+- [epy_block_0, '0', blocks_repack_bits_bb_1_0_0_0, '0']
+- [low_pass_filter_0, '0', blocks_sub_xx_0, '1']
 - [low_pass_filter_0, '0', qtgui_time_sink_x_0, '0']
-- [low_pass_filter_0_0, '0', blocks_sub_xx_0, '1']
+- [low_pass_filter_0_0, '0', blocks_sub_xx_0, '0']
 - [low_pass_filter_0_0, '0', qtgui_time_sink_x_0, '1']
 - [virtual_source_0, '0', blocks_multiply_const_vxx_0, '0']
 - [virtual_source_0_0, '0', blocks_repack_bits_bb_1_0, '0']

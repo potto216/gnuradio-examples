@@ -237,21 +237,33 @@ class DetectionResult:
     k1: int
     Nw: int
     hop: int
+    packet_found: bool = False
 
-def _ca_cfar_alpha(pfa: float, Ntrain: int) -> float:
+def _ca_cfar_alpha(pfa: float, Ntrain: int, m_sig: int=1) -> float:
     # For exponential noise, CA-CFAR: Pfa = (1 + alpha)^(-Ntrain) -> alpha = Pfa^(-1/Ntrain) - 1
+    # this assumes a single-bin CUT (m_sig=1)
+    # However for m_sig > 1 such as the example here of m_sig = 2
+    # Here the test statistic S = E0 + E1 is the SUM of TWO independent exponential bins
+    #   (Gamma with shape m=2). For a sum of m bins the false-alarm relation becomes:
+    #       Pfa = (1 + alpha/m)^(-Ntrain)  ->  alpha = m * (Pfa^(-1/Ntrain) - 1)
+    #   Also, very large Ntrain makes alpha tiny (threshold too low). Cap effective Ntrain.
+    
     if Ntrain <= 0:
         return float("inf")
-    return pfa ** (-1.0 / Ntrain) - 1.0
+    Ntrain_eff = max(4, min(Ntrain, 256)) 
+    alpha = Ntrain_eff*m_sig * (pfa ** (-1.0 / Ntrain_eff) - 1.0)
+
+    return alpha
 
 def detect_packet(
     x_real: np.ndarray,
     cfg: FSKConfig,
     meta: Optional[FSKMeta] = None,
-    pfa: float = 1e-3,
-    win_symbols: int = 16,
-    hop_symbols: int = 2,
+    pfa: float = 1e-1,
+    win_symbols: int = 2,
+    hop_symbols: int = 1,
     guard_bins: int = 2,
+    global_start: int = 0
 ) -> Tuple[DetectionResult, np.ndarray]:
     """
     Sliding-window CFAR on |X(f0)|^2 + |X(f1)|^2 against noise mean excluding ±guard_bins
@@ -297,9 +309,10 @@ def detect_packet(
         noise_vals = P[mask]
         noise_mean = float(np.mean(noise_vals)) if noise_vals.size else 1e-12
         Ntrain = int(mask.sum())
-        alpha = _ca_cfar_alpha(pfa, Ntrain)
-        T = alpha * noise_mean
-        print(f"idx={idx}, S={S:.3f}, noise_mean={noise_mean:.6f}, thr(T)={T:.3f}, alpha={alpha:.3f}")
+        alpha = _ca_cfar_alpha(pfa, Ntrain, m_sig=1)
+        T = alpha * noise_mean *10
+        # include idx also in seconds
+        print(f"global idx_start={idx+global_start} ({(idx+global_start) / meta.fs:.3f}s) , global idx_end={idx + Nw + global_start} ({(idx + Nw + global_start) / meta.fs:.3f}s), stat(S)={S:.3f}, noise_mean={noise_mean:.6f}, thr(T)={T:.3f}, alpha={alpha:.3f}")
 
         stat.append(S)
         thr.append(T)
@@ -314,25 +327,42 @@ def detect_packet(
     above = stat > thr
     runs = []
     i = 0
-    while i < above.size:
+    packet_found = False
+    # Expected packet length in samples
+    Npkt = meta.Nsym * N
+    # Expected number of CFAR windows that overlap the packet
+    if Npkt <= Nw:
+        expected_windows = 1
+    else:
+        expected_windows = ((Npkt - Nw) // hop) + 1
+    # Require (e.g.) 90% of expected windows
+    min_windows = max(1, int(math.ceil(0.9 * expected_windows)))
+
+    while i < above.size and packet_found==False:
         if above[i]:
             j = i
             while j < above.size and above[j]:
                 j += 1
-            runs.append((i, j))  # [i, j)
+            if (j - i) >= min_windows:
+                packet_found = True
+                runs.append((i, j))  # window index span [i, j)
             i = j
         else:
             i += 1
-
-    Npkt = meta.Nsym * N
+            
     if runs:
         i0, i1 = max(runs, key=lambda r: (centers[r[1]-1] - centers[r[0]]))
-        start_idx_est = max(0, int(centers[i0] - Nw))
+        #start_idx_est = max(0, int(centers[i0] - Nw))
+        start_idx_est = max(0, int(centers[i0]))
         stop_idx_est = min(xa.size, start_idx_est + Npkt)
+        print(f"Packet detected: windows [{i0}, {i1}), centers [{centers[i0]}, {centers[i1-1]}], "
+              f"stat(S)={stat[i0]:.3f}, thr(T)={thr[i0]:.3f}")
     else:
         imax = int(np.argmax(stat))
-        start_idx_est = max(0, int(centers[imax] - Nw))
+        #start_idx_est = max(0, int(centers[imax] - Nw))
+        start_idx_est = max(0, int(centers[imax]))
         stop_idx_est = min(xa.size, start_idx_est + Npkt)
+        print("No packet detected.")
 
     det = DetectionResult(
         start_idx=start_idx_est,
@@ -344,6 +374,7 @@ def detect_packet(
         k1=k1,
         Nw=Nw,
         hop=hop,
+        packet_found=packet_found,
     )
     return det, xa
 
@@ -472,6 +503,7 @@ def decode_packet(
     win_symbols: int = 16,
     hop_symbols: int = 2,
     guard_bins: int = 2,
+    global_start: int = 0
 ) -> DecodeOutput:
     """
     Convenience: analytic once, detect, then demod.
@@ -485,6 +517,7 @@ def decode_packet(
         win_symbols=win_symbols,
         hop_symbols=hop_symbols,
         guard_bins=guard_bins,
+        global_start=global_start
     )
     # print where the packet was detected
     # print(f"Packet detected from {det.start_idx} to {det.stop_idx}")
