@@ -4,3 +4,8 @@ __pycache__
 *.pyc
 *.gif
 images/
+data/
+results/
+results
+pkt_fsk_rcv_wav_v1.py
+pkt_fsk_xmt_send_wav_v1.py

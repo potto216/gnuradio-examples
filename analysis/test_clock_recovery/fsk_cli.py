@@ -178,9 +178,9 @@ def make_plots_rx(rx, cfg, packets, base: Path, plot_kind: str):
         out = pkt["out"]
         suffix = f".p{i}"
         # Detection metric
-        fig_det = fsk.fig_detection_metric(out.det, cfg.fs,
-                                           true_start=pkt["start"],
-                                           true_stop=pkt["end"])
+        fig_det = fsk.fig_detection_metric(out.det, cfg.fs, rx,
+                                           true_start=None,
+                                           true_stop=None)
         # Time with bits
         fig_time = fsk.fig_time_with_bits(
             rx,
@@ -190,16 +190,21 @@ def make_plots_rx(rx, cfg, packets, base: Path, plot_kind: str):
             bits_hat=out.dem.bits_hat,
             bits_true=None,
             title=f"Packet {i} time-domain"
-        )
+        )        
         # Symbol magnitudes
         fig_mag = fsk.fig_symbol_magnitudes(out.dem)
+        
+        figure_list=[("det", fig_det), ("time", fig_time), ("mag", fig_mag)]
+        # only keep the first figure
+        figure_list = figure_list[:1]
+
         if plot_kind == "html":
-            for label, fig in [("det", fig_det), ("time", fig_time), ("mag", fig_mag)]:
+            for label, fig in figure_list:
                 path = base.with_suffix(f"{suffix}.{label}.html")
                 fig.write_html(str(path), include_plotlyjs="cdn", full_html=True)
                 out_paths.append(str(path))
         else:
-            for label, fig in [("det", fig_det), ("time", fig_time), ("mag", fig_mag)]:
+            for label, fig in figure_list:
                 path = base.with_suffix(f"{suffix}.{label}.png")
                 fig.write_image(str(path), scale=2)
                 out_paths.append(str(path))

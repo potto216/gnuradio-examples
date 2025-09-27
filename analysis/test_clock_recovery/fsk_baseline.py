@@ -352,8 +352,8 @@ def detect_packet(
             
     if runs:
         i0, i1 = max(runs, key=lambda r: (centers[r[1]-1] - centers[r[0]]))
-        #start_idx_est = max(0, int(centers[i0] - Nw))
-        start_idx_est = max(0, int(centers[i0]))
+        start_idx_est = max(0, int(centers[i0] - Nw))
+        #start_idx_est = max(0, int(centers[i0]+Nw//2))
         stop_idx_est = min(xa.size, start_idx_est + Npkt)
         print(f"Packet detected: windows [{i0}, {i1}), centers [{centers[i0]}, {centers[i1-1]}], "
               f"stat(S)={stat[i0]:.3f}, thr(T)={thr[i0]:.3f}")
@@ -565,19 +565,149 @@ def fig_time_with_bits(
 
 def fig_detection_metric(det,
                          fs: int,
+                         x_real: np.ndarray,
                          title: str = "Detection CFAR",
                          true_start: int | None = None,
                          true_stop: int | None = None):
-    if go is None:
+    if go is None or make_subplots is None:
         raise RuntimeError("Plotly is not available in this environment.")
     tt = det.centers / fs
-    fig = go.Figure()
-    fig.add_trace(go.Scatter(x=tt, y=det.stat,
-                             name="S = |X(f0)|^2+|X(f1)|^2",
-                             mode="lines+markers"))
-    fig.add_trace(go.Scatter(x=tt, y=det.thresh,
-                             name="CFAR threshold",
-                             mode="lines"))
+    t_full = np.arange(x_real.size) / fs
+
+    # Two rows, shared x-axis; top has secondary y for CFAR threshold
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.08,
+        specs=[[{"secondary_y": True}], [{}]]
+    )
+
+    # Row 1: Detection statistic (primary Y)
+    fig.add_trace(
+        go.Scatter(
+            x=tt,
+            y=det.stat,
+            name="S = |X(f0)|^2+|X(f1)|^2",
+            mode="lines+markers"
+        ),
+        row=1, col=1, secondary_y=False
+    )
+
+    # Row 1: CFAR threshold (secondary Y)
+    fig.add_trace(
+        go.Scatter(
+            x=tt,
+            y=det.thresh,
+            name="CFAR threshold",
+            mode="lines"
+        ),
+        row=1, col=1, secondary_y=True
+    )
+
+    # Row 2: Time-domain signal
+    fig.add_trace(
+        go.Scatter(
+            x=t_full,
+            y=x_real,
+            name="time signal",
+            mode="lines"
+        ),
+        row=2, col=1
+    )
+
+    # Detected packet region (both subplots)
+    fig.add_vrect(x0=det.start_idx / fs,
+                  x1=det.stop_idx / fs,
+                  fillcolor="LightGreen",
+                  opacity=0.30,
+                  line_width=0,
+                  annotation_text="Detected",
+                  annotation_position="top left",
+                  row=1, col=1)
+    fig.add_vrect(x0=det.start_idx / fs,
+                  x1=det.stop_idx / fs,
+                  fillcolor="LightGreen",
+                  opacity=0.20,
+                  line_width=0,
+                  row=2, col=1)
+
+    # Optional true packet region (both subplots)
+    if (true_start is not None) and (true_stop is not None):
+        fig.add_vrect(x0=true_start / fs,
+                      x1=true_stop / fs,
+                      fillcolor="LightBlue",
+                      opacity=0.25,
+                      line_width=0,
+                      annotation_text="True",
+                      annotation_position="top right",
+                      layer="below",
+                      row=1, col=1)
+        fig.add_vrect(x0=true_start / fs,
+                      x1=true_stop / fs,
+                      fillcolor="LightBlue",
+                      opacity=0.20,
+                      line_width=0,
+                      layer="below",
+                      row=2, col=1)
+        # Legend proxies
+        fig.add_trace(go.Scatter(x=[None], y=[None],
+                                 mode="markers",
+                                 marker=dict(color="LightGreen"),
+                                 name="Detected region"),
+                      row=1, col=1)
+        fig.add_trace(go.Scatter(x=[None], y=[None],
+                                 mode="markers",
+                                 marker=dict(color="LightBlue"),
+                                 name="True region"),
+                      row=1, col=1)
+
+    fig.update_layout(
+        title=title,
+        legend_title_text=None
+    )
+    # Axes titles
+    fig.update_yaxes(title_text="Energy (S)", row=1, col=1, secondary_y=False)
+    fig.update_yaxes(title_text="CFAR threshold", row=1, col=1, secondary_y=True)
+    fig.update_yaxes(title_text="Amplitude", row=2, col=1)
+    fig.update_xaxes(title_text="Time (s)", row=2, col=1)
+
+    return fig
+
+
+def fig_detection_metric_old(det,
+                         fs: int,
+                         title: str = "Detection CFAR",
+                         true_start: int | None = None,
+                         true_stop: int | None = None):
+    if go is None or make_subplots is None:
+        raise RuntimeError("Plotly is not available in this environment.")
+    tt = det.centers / fs
+
+    # Create subplot with a secondary y-axis
+    fig = make_subplots(specs=[[{"secondary_y": True}]])
+
+    # Primary Y: detection statistic
+    fig.add_trace(
+        go.Scatter(
+            x=tt,
+            y=det.stat,
+            name="S = |X(f0)|^2+|X(f1)|^2",
+            mode="lines+markers"
+        ),
+        secondary_y=False
+    )
+
+    # Secondary Y: CFAR threshold
+    fig.add_trace(
+        go.Scatter(
+            x=tt,
+            y=det.thresh,
+            name="CFAR threshold",
+            mode="lines"
+        ),
+        secondary_y=True
+    )
 
     # Detected packet region
     fig.add_vrect(x0=det.start_idx / fs,
@@ -602,15 +732,22 @@ def fig_detection_metric(det,
         fig.add_trace(go.Scatter(x=[None], y=[None],
                                  mode="markers",
                                  marker=dict(color="LightGreen"),
-                                 name="Detected region"))
+                                 name="Detected region"),
+                      secondary_y=False)
         fig.add_trace(go.Scatter(x=[None], y=[None],
                                  mode="markers",
                                  marker=dict(color="LightBlue"),
-                                 name="True region"))
+                                 name="True region"),
+                      secondary_y=False)
 
-    fig.update_layout(title=title,
-                      xaxis_title="Time (s)",
-                      yaxis_title="Energy")
+    fig.update_layout(
+        title=title,
+        xaxis_title="Time (s)",
+        legend_title_text=None
+    )
+    fig.update_yaxes(title_text="Energy (S)", secondary_y=False)
+    fig.update_yaxes(title_text="CFAR threshold", secondary_y=True)
+
     return fig
 
 
@@ -668,9 +805,10 @@ def _demo_generate_and_decode(snr_db: float = 30.0):
     figs = {}
     try:
         figs["time"] = fig_time_with_bits(rx, cfg.fs, out.det.start_idx, out.meta.sps,
-                                          out.dem.bits_hat, bits_true, title="Time with bit overlays")
+                                         out.dem.bits_hat, bits_true, title="Time with bit overlays")
         figs["spec"] = fig_spectrum(rx, cfg.fs, cfg.f0, cfg.f1, title="Spectrum of RX (with guard zeros)")
-        figs["det"]  = fig_detection_metric(out.det, cfg.fs, title="CFAR detection metric")
+
+        figs["det"]  = fig_detection_metric(out.det, cfg.fs, rx, title="CFAR detection metric")
         figs["mags"] = fig_symbol_magnitudes(out.dem, title="Per-symbol magnitudes at best tau")
     except Exception as e:
         logger.warning(f"Plotly not available for demo plots: {e}")
