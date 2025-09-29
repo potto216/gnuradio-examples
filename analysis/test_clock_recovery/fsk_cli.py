@@ -170,41 +170,58 @@ def make_plots_tx(rx_full, tx_obj, cfg, base: Path, mode: str,
     return outputs
 
 
-def make_plots_rx(rx, cfg, packets, base: Path, plot_kind: str):
+def make_plots_rx(rx, cfg, packets, base: Path, plot_kind: str, plot_list: str = "det", truth_bits=None):
     if pio is None or plot_kind == "none":
         return []
+    # Parse desired plots: comma-separated string (e.g., "det,time") or "all"
+    if isinstance(plot_list, str):
+        tokens = [t.strip().lower() for t in plot_list.split(",")] if plot_list else []
+    else:
+        tokens = [str(t).strip().lower() for t in plot_list]
+    if not tokens:
+        tokens = ["det"]
+    valid = {"det", "time", "mag"}
+    wanted = valid if ("all" in tokens) else {t for t in tokens if t in valid}
+
     out_paths = []
     for i, pkt in enumerate(packets):
         out = pkt["out"]
         suffix = f".p{i}"
-        # Detection metric
-        fig_det = fsk.fig_detection_metric(out.det, cfg.fs, rx,
-                                           true_start=None,
-                                           true_stop=None)
-        # Time with bits
-        fig_time = fsk.fig_time_with_bits(
-            rx,
-            cfg.fs,
-            pkt["start"],
-            out.meta.sps,
-            bits_hat=out.dem.bits_hat,
-            bits_true=None,
-            title=f"Packet {i} time-domain"
-        )        
-        # Symbol magnitudes
-        fig_mag = fsk.fig_symbol_magnitudes(out.dem)
-        
-        figure_list=[("det", fig_det), ("time", fig_time), ("mag", fig_mag)]
-        # only keep the first figure
-        figure_list = figure_list[:1]
+
+        figs = {}
+        if "det" in wanted:
+            figs["det"] = fsk.fig_detection_metric(
+                out.det,
+                cfg.fs,
+                rx,
+                bits_hat=out.dem.bits_hat,
+                bits_true=truth_bits,
+                sps=out.meta.sps,
+                pkt_start=pkt["start"],
+                true_start=None,
+                true_stop=None,
+                time_offset_samples=pkt["start"]   # align detection to full waveform time                
+            )
+        if "time" in wanted:
+            figs["time"] = fsk.fig_time_with_bits(
+                rx,
+                cfg.fs,
+                pkt["start"],
+                out.meta.sps,
+                bits_hat=out.dem.bits_hat,
+                bits_true=None,
+                title=f"Packet {i} time-domain"
+            )
+        if "mag" in wanted:
+            figs["mag"] = fsk.fig_symbol_magnitudes(out.dem)
 
         if plot_kind == "html":
-            for label, fig in figure_list:
+            for label, fig in figs.items():
                 path = base.with_suffix(f"{suffix}.{label}.html")
                 fig.write_html(str(path), include_plotlyjs="cdn", full_html=True)
                 out_paths.append(str(path))
         else:
-            for label, fig in figure_list:
+            for label, fig in figs.items():
                 path = base.with_suffix(f"{suffix}.{label}.png")
                 fig.write_image(str(path), scale=2)
                 out_paths.append(str(path))
@@ -498,7 +515,8 @@ def cmd_rx(args):
     json_path = base.with_suffix(".json")
     save_json(json_path, top)
 
-    plot_paths = make_plots_rx(x, cfg, packets, base, args.plots)
+    # Pass truth_bits into plot builder so per-bit coloring can be applied
+    plot_paths = make_plots_rx(x, cfg, packets, base, args.plots, plot_list="det", truth_bits=truth_bits)
     if plot_paths:
         top["plots"] = plot_paths
         save_json(json_path, top)
