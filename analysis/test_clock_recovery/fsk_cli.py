@@ -199,8 +199,7 @@ def make_plots_rx(rx, cfg, packets, base: Path, plot_kind: str, plot_list: str =
                 sps=out.meta.sps,
                 pkt_start=pkt["start"],
                 true_start=None,
-                true_stop=None,
-                time_offset_samples=pkt["start"]   # align detection to full waveform time                
+                true_stop=None
             )
         if "time" in wanted:
             figs["time"] = fsk.fig_time_with_bits(
@@ -217,13 +216,15 @@ def make_plots_rx(rx, cfg, packets, base: Path, plot_kind: str, plot_list: str =
 
         if plot_kind == "html":
             for label, fig in figs.items():
-                path = base.with_suffix(f"{suffix}.{label}.html")
+                path = base.with_suffix(f"{suffix}.{label}.html")                
                 fig.write_html(str(path), include_plotlyjs="cdn", full_html=True)
+                print(f"Wrote plot: {path}")
                 out_paths.append(str(path))
         else:
             for label, fig in figs.items():
                 path = base.with_suffix(f"{suffix}.{label}.png")
                 fig.write_image(str(path), scale=2)
+                print(f"Wrote plot: {path}")
                 out_paths.append(str(path))
     return out_paths
 

@@ -230,7 +230,7 @@ def analytic_signal_fft(x: np.ndarray) -> np.ndarray:
 class DetectionResult:
     start_idx: int
     stop_idx: int
-    centers: np.ndarray
+    centers: np.ndarray # center sample index of each CFAR window (relative to xa)
     stat: np.ndarray
     thresh: np.ndarray
     k0: int
@@ -238,6 +238,7 @@ class DetectionResult:
     Nw: int
     hop: int
     packet_found: bool = False
+    global_start: int = 0  # new field to track global start index
 
 def _ca_cfar_alpha(pfa: float, Ntrain: int, m_sig: int=1) -> float:
     # For exponential noise, CA-CFAR: Pfa = (1 + alpha)^(-Ntrain) -> alpha = Pfa^(-1/Ntrain) - 1
@@ -375,6 +376,7 @@ def detect_packet(
         Nw=Nw,
         hop=hop,
         packet_found=packet_found,
+        global_start=global_start
     )
     return det, xa
 
@@ -574,11 +576,16 @@ def fig_detection_metric(det,
                          title: str = "Detection CFAR",
                          true_start: int | None = None,
                          true_stop: int | None = None,
-                         time_offset_samples: int = 0):
+                         time_offset_samples: int = 0,
+                         bit_text_y_frac: float = 0.85,
+                         time_adjust: float = (23.5/100.0 - 34.0/44100.0)):
+    """
+    bit_text_y_frac: vertical position for bit text as fraction of y-range (0=bottom, 1=top).
+    """
     if go is None or make_subplots is None:
         raise RuntimeError("Plotly is not available in this environment.")
     # Apply offset so detection times align to the full time-domain x-axis
-    tt = (det.centers + int(pkt_start)) / fs
+    t_det = (det.centers + int(det.global_start)) / fs
     t_full = np.arange(x_real.size) / fs
 
     # Two rows, shared x-axis; top has secondary y for CFAR threshold
@@ -593,7 +600,7 @@ def fig_detection_metric(det,
     # Row 1: Detection statistic (primary Y)
     fig.add_trace(
         go.Scatter(
-            x=tt,
+            x=t_det,
             y=det.stat,
             name="S = |X(f0)|^2+|X(f1)|^2",
             mode="lines+markers"
@@ -604,7 +611,7 @@ def fig_detection_metric(det,
     # Row 1: CFAR threshold (secondary Y)
     fig.add_trace(
         go.Scatter(
-            x=tt,
+            x=t_det,
             y=det.thresh,
             name="CFAR threshold",
             mode="lines"
@@ -623,7 +630,12 @@ def fig_detection_metric(det,
         row=2, col=1
     )
 
-    # Row 2: Per-bit background coloring (correct vs error)
+    # Compute y position for bit text in row 2
+    ymin = float(np.min(x_real)) if x_real.size > 0 else 0.0
+    ymax = float(np.max(x_real)) if x_real.size > 0 else 1.0
+    bit_text_y = ymin + bit_text_y_frac * (ymax - ymin)
+
+    # Row 2: Per-bit background coloring (correct vs error) + bit text
     # Requires bits_true and bits_hat and sps and pkt_start
     if (bits_true is not None) and (bits_hat is not None) and (sps is not None) and (pkt_start is not None):
         n_bits = min(len(bits_true), len(bits_hat))
@@ -633,6 +645,7 @@ def fig_detection_metric(det,
 
         # Add legend proxies once (shapes don't appear in legend)
         legend_added = False
+                
 
         for i in range(n_bits):
             a = pkt_start + i * sps
@@ -648,14 +661,30 @@ def fig_detection_metric(det,
             ok = (int(bits_hat[i]) == int(bits_true[i]))
             color = "rgba(0,255,0,0.7)" if ok else "rgba(255,0,0,0.7)"
             fig.add_vrect(
-                x0=max(t0, tmin),
-                x1=min(t1, tmax),
+                x0=max(t0, tmin)+ time_adjust,
+                x1=min(t1, tmax)+ time_adjust,
                 fillcolor=color,
                 opacity=0.7,
-                line_width=0,
+                line_width=1,
+                line_color="black",
                 layer="below",
                 row=2, col=1
             )
+            
+            # Add bit text at center of interval
+            #                 xref="x3",
+            #yref="y",
+            t_center = (t0 + t1) / 2.0
+            bit_val = f"b[{i}] = {bits_hat[i]}"
+            fig.add_annotation(
+                x=t_center + time_adjust,
+                y=bit_text_y,
+                text=str(bit_val),
+                showarrow=False,
+                font=dict(size=10, color="black"),
+                row=2, col=1
+            )
+            
             if not legend_added:
                 fig.add_trace(go.Scatter(x=[None], y=[None], mode="markers",
                                          marker=dict(color="rgba(0,255,0,0.8)"),
@@ -668,8 +697,8 @@ def fig_detection_metric(det,
                 legend_added = True
 
     # Detected packet region (both subplots) — shift by same offset
-    fig.add_vrect(x0=(det.start_idx) / fs,
-                  x1=(det.stop_idx) / fs,
+    fig.add_vrect(x0=(det.start_idx + det.global_start ) / fs + time_adjust,
+                  x1=(det.stop_idx + det.global_start ) / fs + time_adjust,
                   fillcolor="LightGreen",
                   opacity=0.30,
                   line_width=0,
@@ -677,8 +706,8 @@ def fig_detection_metric(det,
                   annotation_position="top left",
                   row=1, col=1)
 
-    fig.add_vrect(x0=(det.start_idx ) / fs,
-                  x1=(det.stop_idx  ) / fs,
+    fig.add_vrect(x0=(det.start_idx + det.global_start) / fs + time_adjust,
+                  x1=(det.stop_idx + det.global_start ) / fs + time_adjust,
                   fillcolor="LightGreen",
                   opacity=0.20,
                   line_width=0,
@@ -727,81 +756,6 @@ def fig_detection_metric(det,
     return fig
 
 
-def fig_detection_metric_old(det,
-                         fs: int,
-                         title: str = "Detection CFAR",
-                         true_start: int | None = None,
-                         true_stop: int | None = None):
-    if go is None or make_subplots is None:
-        raise RuntimeError("Plotly is not available in this environment.")
-    tt = det.centers / fs
-
-    # Create subplot with a secondary y-axis
-    fig = make_subplots(specs=[[{"secondary_y": True}]])
-
-    # Primary Y: detection statistic
-    fig.add_trace(
-        go.Scatter(
-            x=tt,
-            y=det.stat,
-            name="S = |X(f0)|^2+|X(f1)|^2",
-            mode="lines+markers"
-        ),
-        secondary_y=False
-    )
-
-    # Secondary Y: CFAR threshold
-    fig.add_trace(
-        go.Scatter(
-            x=tt,
-            y=det.thresh,
-            name="CFAR threshold",
-            mode="lines"
-        ),
-        secondary_y=True
-    )
-
-    # Detected packet region
-    fig.add_vrect(x0=det.start_idx / fs,
-                  x1=det.stop_idx / fs,
-                  fillcolor="LightGreen",
-                  opacity=0.30,
-                  line_width=0,
-                  annotation_text="Detected",
-                  annotation_position="top left")
-
-    # Optional true packet region
-    if (true_start is not None) and (true_stop is not None):
-        fig.add_vrect(x0=true_start / fs,
-                      x1=true_stop / fs,
-                      fillcolor="LightBlue",
-                      opacity=0.25,
-                      line_width=0,
-                      annotation_text="True",
-                      annotation_position="top right",
-                      layer="below")
-        # Legend proxies (shapes don't appear in legend)
-        fig.add_trace(go.Scatter(x=[None], y=[None],
-                                 mode="markers",
-                                 marker=dict(color="LightGreen"),
-                                 name="Detected region"),
-                      secondary_y=False)
-        fig.add_trace(go.Scatter(x=[None], y=[None],
-                                 mode="markers",
-                                 marker=dict(color="LightBlue"),
-                                 name="True region"),
-                      secondary_y=False)
-
-    fig.update_layout(
-        title=title,
-        xaxis_title="Time (s)",
-        legend_title_text=None
-    )
-    fig.update_yaxes(title_text="Energy (S)", secondary_y=False)
-    fig.update_yaxes(title_text="CFAR threshold", secondary_y=True)
-
-    return fig
-
 
 def fig_spectrum(x: np.ndarray, fs: int, f0: float, f1: float, title: str = "Spectrum"):
     if go is None:
@@ -831,55 +785,3 @@ def fig_symbol_magnitudes(dem, title: str = "Per-symbol Magnitudes"):
     fig.update_layout(barmode="group", title=title, xaxis_title="Symbol index", yaxis_title="Magnitude")
     return fig
 
-# ------------------------------ Demo (__main__) ----------------------------- #
-
-def _demo_generate_and_decode(snr_db: float = 30.0):
-    """
-    Generate a random 32-byte packet, modulate, add AWGN, detect+demod.
-    Returns dict with signal, cfg, meta, det, dem, bits_true, figs.
-    """
-    rng = np.random.default_rng(12345)
-    payload = bytes(rng.integers(0, 256, size=32, dtype=np.uint8))
-    cfg = FSKConfig()
-    tx, meta = modulate_fsk(payload, cfg)
-    # Add AWGN (real) to emulate capture over cable
-    p_sig = np.mean(tx**2)
-    snr_lin = 10 ** (snr_db / 10.0)
-    p_n = p_sig / snr_lin
-    noise = np.sqrt(p_n) * rng.standard_normal(tx.shape)
-    rx = tx + noise
-
-    # Decode
-    out = decode_packet(rx, cfg=cfg, pfa=1e-3, win_symbols=16, hop_symbols=2, guard_bins=2)
-    bits_true = bytes_to_bits(payload, msb_first=True)
-
-    # Figures
-    figs = {}
-    try:
-        figs["time"] = fig_time_with_bits(rx, cfg.fs, out.det.start_idx, out.meta.sps,
-                                         out.dem.bits_hat, bits_true, title="Time with bit overlays")
-        figs["spec"] = fig_spectrum(rx, cfg.fs, cfg.f0, cfg.f1, title="Spectrum of RX (with guard zeros)")
-
-        figs["det"]  = fig_detection_metric(out.det, cfg.fs, rx,
-                                            bits_hat=out.dem.bits_hat,
-                                            bits_true=bits_true,
-                                            sps=out.meta.sps,
-                                            pkt_start=out.det.start_idx,
-                                            title="CFAR detection metric")
-        figs["mags"] = fig_symbol_magnitudes(out.dem, title="Per-symbol magnitudes at best tau")
-    except Exception as e:
-        logger.warning(f"Plotly not available for demo plots: {e}")
-
-    return dict(payload=payload, bits_true=bits_true, cfg=cfg, meta=meta,
-                tx=tx, rx=rx, det=out.det, dem=out.dem, figs=figs)
-
-if __name__ == "__main__":
-    res = _demo_generate_and_decode(snr_db=30.0)
-    if res["figs"]:
-        from pathlib import Path
-        outdir = Path(".")
-        for name, fig in res["figs"].items():
-            fig.write_html(outdir / f"fsk_demo_{name}.html", include_plotlyjs="cdn")
-        print("Wrote demo HTML plots:",
-              ", ".join([f"fsk_demo_{k}.html" for k in res["figs"].keys()]))
-    print("Demo complete. Compare bits_true vs dem.bits_hat for BER.")
