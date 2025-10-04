@@ -170,7 +170,10 @@ def make_plots_tx(rx_full, tx_obj, cfg, base: Path, mode: str,
     return outputs
 
 
-def make_plots_rx(rx, cfg, packets, base: Path, plot_kind: str, plot_list: str = "det", truth_bits=None):
+def make_plots_rx(rx, cfg, packets, base: Path, plot_kind: str, plot_list: str = "det", 
+                  truth_bits=None, det_time_adjust: float = 0.0, 
+                  show_bit_text: bool = True, show_bit_outline: bool = True,
+                  show_bit_overlay: bool = True):
     if pio is None or plot_kind == "none":
         return []
     # Parse desired plots: comma-separated string (e.g., "det,time") or "all"
@@ -194,12 +197,15 @@ def make_plots_rx(rx, cfg, packets, base: Path, plot_kind: str, plot_list: str =
                 out.det,
                 cfg.fs,
                 rx,
-                bits_hat=out.dem.bits_hat,
-                bits_true=truth_bits,
+                bits_hat=out.dem.bits_hat if show_bit_overlay else None,
+                bits_true=truth_bits if show_bit_overlay else None,
                 sps=out.meta.sps,
                 pkt_start=pkt["start"],
                 true_start=None,
-                true_stop=None
+                true_stop=None,
+                det_overlay_time_adjust_sec=det_time_adjust,
+                show_bit_text=show_bit_text,
+                show_bit_outline=show_bit_outline
             )
         if "time" in wanted:
             figs["time"] = fsk.fig_time_with_bits(
@@ -516,8 +522,16 @@ def cmd_rx(args):
     json_path = base.with_suffix(".json")
     save_json(json_path, top)
 
-    # Pass truth_bits into plot builder so per-bit coloring can be applied
-    plot_paths = make_plots_rx(x, cfg, packets, base, args.plots, plot_list="det", truth_bits=truth_bits)
+    # Pass overlay control options to plot builder
+    plot_paths = make_plots_rx(
+        x, cfg, packets, base, args.plots, 
+        plot_list="det", 
+        truth_bits=truth_bits,
+        det_time_adjust=args.det_time_adjust,
+        show_bit_text=args.show_bit_text,
+        show_bit_outline=args.show_bit_outline,
+        show_bit_overlay=args.show_bit_overlay
+    )
     if plot_paths:
         top["plots"] = plot_paths
         save_json(json_path, top)
@@ -577,6 +591,17 @@ def parse_args(argv):
                     help="Limit number of packets to decode.")
     rx.add_argument("--plots", choices=["none", "png", "html"], default="none",
                     help="Generate plots for each decoded packet.")
+    
+    # New overlay control options
+    rx.add_argument("--det-time-adjust", type=float, default=0.0,
+                    help="Time adjustment (seconds) for detection overlay alignment (default: 0.0)")
+    rx.add_argument("--no-bit-text", dest="show_bit_text", action="store_false", default=True,
+                    help="Hide bit value text on waveform plot")
+    rx.add_argument("--no-bit-outline", dest="show_bit_outline", action="store_false", default=True,
+                    help="Hide bit box outlines on waveform plot")
+    rx.add_argument("--no-bit-overlay", dest="show_bit_overlay", action="store_false", default=True,
+                    help="Hide all bit overlays on waveform plot")
+    
     rx.set_defaults(func=cmd_rx)
 
     return p.parse_args(argv)

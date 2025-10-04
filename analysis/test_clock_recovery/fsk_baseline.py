@@ -576,11 +576,15 @@ def fig_detection_metric(det,
                          title: str = "Detection CFAR",
                          true_start: int | None = None,
                          true_stop: int | None = None,
-                         time_offset_samples: int = 0,
                          bit_text_y_frac: float = 0.85,
-                         time_adjust: float = (23.5/100.0 - 34.0/44100.0)):
+                         det_overlay_time_adjust_sec: float = 0.0,
+                         show_bit_text: bool = True,
+                         show_bit_outline: bool = True):
     """
     bit_text_y_frac: vertical position for bit text as fraction of y-range (0=bottom, 1=top).
+    det_overlay_time_adjust_sec: time offset in seconds for detection overlays.
+    show_bit_text: whether to show bit value text annotations.
+    show_bit_outline: whether to show bit box outlines.
     """
     if go is None or make_subplots is None:
         raise RuntimeError("Plotly is not available in this environment.")
@@ -646,7 +650,6 @@ def fig_detection_metric(det,
         # Add legend proxies once (shapes don't appear in legend)
         legend_added = False
                 
-
         for i in range(n_bits):
             a = pkt_start + i * sps
             b = a + sps
@@ -660,30 +663,32 @@ def fig_detection_metric(det,
                 continue
             ok = (int(bits_hat[i]) == int(bits_true[i]))
             color = "rgba(0,255,0,0.7)" if ok else "rgba(255,0,0,0.7)"
+            
+            # Draw bit box with optional outline
+            line_width = 1 if show_bit_outline else 0
             fig.add_vrect(
-                x0=max(t0, tmin)+ time_adjust,
-                x1=min(t1, tmax)+ time_adjust,
+                x0=max(t0, tmin) + det_overlay_time_adjust_sec,
+                x1=min(t1, tmax) + det_overlay_time_adjust_sec,
                 fillcolor=color,
                 opacity=0.7,
-                line_width=1,
-                line_color="black",
+                line_width=line_width,
+                line_color="black" if show_bit_outline else color,
                 layer="below",
                 row=2, col=1
             )
             
-            # Add bit text at center of interval
-            #                 xref="x3",
-            #yref="y",
-            t_center = (t0 + t1) / 2.0
-            bit_val = f"b[{i}] = {bits_hat[i]}"
-            fig.add_annotation(
-                x=t_center + time_adjust,
-                y=bit_text_y,
-                text=str(bit_val),
-                showarrow=False,
-                font=dict(size=10, color="black"),
-                row=2, col=1
-            )
+            # Add bit text at center of interval (if enabled)
+            if show_bit_text:
+                t_center = (t0 + t1) / 2.0
+                bit_val = f"b[{i}] = {bits_hat[i]}"
+                fig.add_annotation(
+                    x=t_center + det_overlay_time_adjust_sec,
+                    y=bit_text_y,
+                    text=str(bit_val),
+                    showarrow=False,
+                    font=dict(size=10, color="black"),
+                    row=2, col=1
+                )
             
             if not legend_added:
                 fig.add_trace(go.Scatter(x=[None], y=[None], mode="markers",
@@ -697,8 +702,8 @@ def fig_detection_metric(det,
                 legend_added = True
 
     # Detected packet region (both subplots) — shift by same offset
-    fig.add_vrect(x0=(det.start_idx + det.global_start ) / fs + time_adjust,
-                  x1=(det.stop_idx + det.global_start ) / fs + time_adjust,
+    fig.add_vrect(x0=(det.start_idx + det.global_start) / fs + det_overlay_time_adjust_sec,
+                  x1=(det.stop_idx + det.global_start) / fs + det_overlay_time_adjust_sec,
                   fillcolor="LightGreen",
                   opacity=0.30,
                   line_width=0,
@@ -706,8 +711,8 @@ def fig_detection_metric(det,
                   annotation_position="top left",
                   row=1, col=1)
 
-    fig.add_vrect(x0=(det.start_idx + det.global_start) / fs + time_adjust,
-                  x1=(det.stop_idx + det.global_start ) / fs + time_adjust,
+    fig.add_vrect(x0=(det.start_idx + det.global_start) / fs + det_overlay_time_adjust_sec,
+                  x1=(det.stop_idx + det.global_start) / fs + det_overlay_time_adjust_sec,
                   fillcolor="LightGreen",
                   opacity=0.20,
                   line_width=0,
