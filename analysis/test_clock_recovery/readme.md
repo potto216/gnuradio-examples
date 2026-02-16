@@ -18,21 +18,20 @@ This directory contains a baseline 2-FSK modulator plus offline packet detection
 
 ## 1. Installation
 
-Create and activate a virtual environment (recommended):
+Create and activate a virtual Python environment (recommended) using uv:
 
 ```bash
-python3 -m venv .analysis
-source .analysis/bin/activate
+curl -LsSf https://astral.sh/uv/install.sh | sh
+uv python install
+uv venv
+source .venv/bin/activate
 ```
 
 Install dependencies:
 
 ```bash
-pip install --upgrade pip
-pip install ipympl mplcursors
-pip install plotly
-pip install kaleido
-pip install soundfile
+uv pip install --upgrade pip
+uv pip install -r requirements.txt
 ```
 
 (Optional) If you use a helper to configure a Chrome renderer:
@@ -45,7 +44,7 @@ plotly_get_chrome
 
 ## 2. Transmit (Generate a Test Packet)
 
-Generate a synthetic FSK packet WAV + JSON metadata:
+Generate a synthetic FSK packet WAV file + JSON metadata with 100 milliseconds of blank before and :
 
 ```bash
 python fsk_cli.py tx \
@@ -210,6 +209,4 @@ For each RX run (with plots enabled):
 - Soft metrics export (LLR-like).
 - Multi-packet auto batch decode + summary CSV.
 
----
 
-Happy decoding!

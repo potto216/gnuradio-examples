@@ -1,0 +1,12 @@
+ipympl
+mplcursors
+plotly
+kaleido
+soundfile
+jupyterlab
+numpy
+matplotlib
+pandas
+plotly
+scipy
+imageio
