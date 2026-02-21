@@ -1,51 +1,15 @@
 #!/usr/bin/env python3
-import argparse, json, sys, os, math, datetime
+import argparse, json, sys, os, math
 from pathlib import Path
 import numpy as np
 
-try:
-    import soundfile as sf
-except ImportError:
-    sf = None
 try:
     import plotly.io as pio
 except ImportError:
     pio = None
 
 import fsk_baseline as fsk
-
-
-def _now_iso():
-    # Use timezone-aware UTC (avoids deprecation warning for utcnow)
-    ts = datetime.datetime.now(datetime.UTC)
-    # Ensure trailing 'Z' (strip offset)
-    return ts.isoformat().replace("+00:00", "Z")
-
-
-def write_wav(path: Path, data: np.ndarray, fs: int):
-    if sf is None:
-        from scipy.io import wavfile
-        wavfile.write(str(path), fs, data.astype(np.float32))
-    else:
-        sf.write(str(path), data.astype(np.float32), fs)
-
-
-def read_wav(path: Path):
-    if sf is None:
-        from scipy.io import wavfile
-        fs, x = wavfile.read(str(path))
-        if x.dtype != np.float32:
-            x = x.astype(np.float32) / np.max(np.abs(x))
-    else:
-        x, fs = sf.read(str(path), dtype="float32")
-        if x.ndim > 1:
-            x = x[:, 0]
-    return fs, x.astype(np.float32)
-
-
-def save_json(path: Path, obj):
-    with open(path, "w") as fh:
-        json.dump(obj, fh, indent=2)
+from fsk_common import now_iso_utc, write_wav, read_wav, save_json
 
 
 def build_tx_signal(cfg: fsk.FSKConfig,
@@ -257,7 +221,7 @@ def cmd_tx(args):
     meta = tx_obj["meta"]
     info = {
         "mode": "tx",
-        "timestamp": _now_iso(),
+        "timestamp": now_iso_utc(),
         "wav": str(wav_path),
         "config": {
             "fs": cfg.fs,
@@ -491,7 +455,7 @@ def cmd_rx(args):
     # Create overall results
     top = {
         "mode": "rx",
-        "timestamp": _now_iso(),
+        "timestamp": now_iso_utc(),
         "wav": args.wav,
         "config": {
             "fs": cfg.fs,

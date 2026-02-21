@@ -23,6 +23,8 @@ import logging
 from dataclasses import dataclass
 from typing import Iterable, Tuple, Dict, Optional
 
+from fsk_cfar import ca_cfar_alpha, analyze_cfar_window
+
 import numpy as np
 
 try:
@@ -241,20 +243,7 @@ class DetectionResult:
     global_start: int = 0  # new field to track global start index
 
 def _ca_cfar_alpha(pfa: float, Ntrain: int, m_sig: int=1) -> float:
-    # For exponential noise, CA-CFAR: Pfa = (1 + alpha)^(-Ntrain) -> alpha = Pfa^(-1/Ntrain) - 1
-    # this assumes a single-bin CUT (m_sig=1)
-    # However for m_sig > 1 such as the example here of m_sig = 2
-    # Here the test statistic S = E0 + E1 is the SUM of TWO independent exponential bins
-    #   (Gamma with shape m=2). For a sum of m bins the false-alarm relation becomes:
-    #       Pfa = (1 + alpha/m)^(-Ntrain)  ->  alpha = m * (Pfa^(-1/Ntrain) - 1)
-    #   Also, very large Ntrain makes alpha tiny (threshold too low). Cap effective Ntrain.
-    
-    if Ntrain <= 0:
-        return float("inf")
-    Ntrain_eff = max(4, min(Ntrain, 256)) 
-    alpha = Ntrain_eff*m_sig * (pfa ** (-1.0 / Ntrain_eff) - 1.0)
-
-    return alpha
+    return ca_cfar_alpha(pfa, Ntrain, m_sig=m_sig)
 
 def detect_packet(
     x_real: np.ndarray,
@@ -295,23 +284,19 @@ def detect_packet(
         X = np.fft.fft(seg)
         P = (X * np.conj(X)).real  # |X|^2
 
-        # Tone energies
-        E0 = P[k0]
-        E1 = P[k1]
-        S = E0 + E1
-
-        # Noise estimate: exclude bins near tones + DC
-        mask = np.ones(Nw, dtype=bool)
-        for k in (k0, k1):
-            lo = max(k - guard_bins, 0)
-            hi = min(k + guard_bins, Nw - 1)
-            mask[lo:hi + 1] = False
-        mask[0] = False
-        noise_vals = P[mask]
-        noise_mean = float(np.mean(noise_vals)) if noise_vals.size else 1e-12
-        Ntrain = int(mask.sum())
-        alpha = _ca_cfar_alpha(pfa, Ntrain, m_sig=1)
-        T = alpha * noise_mean *10
+        cfar = analyze_cfar_window(
+            P,
+            k0=k0,
+            k1=k1,
+            guard_bins=guard_bins,
+            pfa=pfa,
+            m_sig=1,
+            threshold_scale=10.0,
+        )
+        S = cfar["stat"]
+        T = cfar["threshold"]
+        noise_mean = cfar["noise_mean"]
+        alpha = cfar["alpha"]
         # include idx also in seconds
         print(f"global idx_start={idx+global_start} ({(idx+global_start) / meta.fs:.3f}s) , global idx_end={idx + Nw + global_start} ({(idx + Nw + global_start) / meta.fs:.3f}s), stat(S)={S:.3f}, noise_mean={noise_mean:.6f}, thr(T)={T:.3f}, alpha={alpha:.3f}")
 
