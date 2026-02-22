@@ -85,9 +85,14 @@ def run_analysis(args):
             "detect_mean": float(np.mean(cfar["detection_vals"])),
             "guard_mean": float(np.mean(cfar["guard_vals"])) if cfar["guard_vals"].size else 0.0,
             "noise_band_mean": float(np.mean(cfar["noise_vals"])) if cfar["noise_vals"].size else 0.0,
+            "fft_power": P,
             "cfar": cfar,
         })
         idx += hop
+
+    Z = np.stack([r["fft_power"] for r in rows], axis=0).T
+    t = np.array([r["time_center_s"] for r in rows])
+    bins = np.arange(Z.shape[0])
 
     centers = np.array([r["idx_center"] for r in rows])
     focus_i = int(np.argmin(np.abs(centers - center)))
@@ -151,19 +156,21 @@ def run_analysis(args):
             fh.write(f"{int(b)},{float(v):.9f},detect\n")
 
     if args.plots != "none" and go is not None and make_subplots is not None:
-        fig = make_subplots(rows=3, cols=1, vertical_spacing=0.08, subplot_titles=(
+        fig = make_subplots(rows=4, cols=1, vertical_spacing=0.08, subplot_titles=(
             "CFAR statistic vs threshold",
+            "CFAR FFT Bin Power vs Time",
             "Focus window FFT bins by CFAR band",
             "alpha vs Pfa",
         ))
-        t = np.array([r["idx_center"] / fs for r in rows])
         fig.add_trace(go.Scatter(x=t, y=[r["stat"] for r in rows], name="stat", mode="lines+markers"), row=1, col=1)
         fig.add_trace(go.Scatter(x=t, y=[r["threshold"] for r in rows], name="threshold", mode="lines+markers"), row=1, col=1)
         fig.add_vline(x=focus["idx_center"] / fs, line_dash="dot", line_color="black", row=1, col=1)
 
-        fig.add_trace(go.Scatter(x=cfar["noise_bins"], y=cfar["noise_vals"], name="noise", mode="markers", marker=dict(size=5)), row=2, col=1)
-        fig.add_trace(go.Scatter(x=cfar["guard_bins"], y=cfar["guard_vals"], name="guard", mode="markers", marker=dict(size=6)), row=2, col=1)
-        fig.add_trace(go.Scatter(x=cfar["detection_bins"], y=cfar["detection_vals"], name="detect", mode="markers", marker=dict(size=9, symbol="diamond")), row=2, col=1)
+        fig.add_trace(go.Heatmap(x=t, y=bins, z=Z, colorbar=dict(title="Power"), name="fft_power"), row=2, col=1)
+
+        fig.add_trace(go.Scatter(x=cfar["noise_bins"], y=cfar["noise_vals"], name="noise", mode="markers", marker=dict(size=5)), row=3, col=1)
+        fig.add_trace(go.Scatter(x=cfar["guard_bins"], y=cfar["guard_vals"], name="guard", mode="markers", marker=dict(size=6)), row=3, col=1)
+        fig.add_trace(go.Scatter(x=cfar["detection_bins"], y=cfar["detection_vals"], name="detect", mode="markers", marker=dict(size=9, symbol="diamond")), row=3, col=1)
 
         pfa_vals = np.logspace(np.log10(args.pfa_min), np.log10(args.pfa_max), args.pfa_points)
         ntrain = int(cfar["noise_bins"].size)
@@ -174,7 +181,7 @@ def run_analysis(args):
                 name="alpha m=1",
                 mode="lines+markers",
             ),
-            row=3,
+            row=4,
             col=1,
         )
         fig.add_trace(
@@ -184,16 +191,18 @@ def run_analysis(args):
                 name="alpha m=2",
                 mode="lines+markers",
             ),
-            row=3,
+            row=4,
             col=1,
         )
-        fig.update_xaxes(type="log", row=3, col=1, title_text="Pfa")
-        fig.update_yaxes(title_text="alpha", row=3, col=1)
+        fig.update_xaxes(type="log", row=4, col=1, title_text="Pfa")
+        fig.update_yaxes(title_text="alpha", row=4, col=1)
         fig.update_xaxes(title_text="time (s)", row=1, col=1)
         fig.update_yaxes(title_text="power (linear)", row=1, col=1)
-        fig.update_xaxes(title_text="FFT bin", row=2, col=1)
-        fig.update_yaxes(title_text="FFT bin power (linear)", row=2, col=1)
-        fig.update_layout(title="FSK CFAR Analysis", height=1000)
+        fig.update_xaxes(title_text="time (s)", row=2, col=1)
+        fig.update_yaxes(title_text="FFT bin", row=2, col=1)
+        fig.update_xaxes(title_text="FFT bin", row=3, col=1)
+        fig.update_yaxes(title_text="FFT bin power (linear)", row=3, col=1)
+        fig.update_layout(title="FSK CFAR Analysis", height=1300)
 
         if args.plots == "html":
             fig.write_html(str(base.with_suffix(".plot.html")), include_plotlyjs="cdn", full_html=True)
