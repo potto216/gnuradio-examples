@@ -258,7 +258,7 @@ Analysis region selection (choose one style):
 
 Plots:
 - `--plots none|html|png` (default `html`)
-- `--frequency-axis`: Use frequency (Hz) instead of FFT bin index on the heatmap y-axis
+- `--frequency-axis`: Use frequency (Hz) instead of FFT bin index on the heatmap y-axis (one-sided: 0..Nyquist)
 - `--heatmap-db`: Plot the heatmap in dB instead of linear
 
 ### 8.3 Outputs

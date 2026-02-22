@@ -95,13 +95,14 @@ def run_analysis(args):
     bins = np.arange(Z.shape[0])
     use_frequency_axis = bool(getattr(args, "frequency_axis", False))
 
-    # NOTE: Plotly heatmaps can fail to render (or render as blank) if the coordinate
-    # axis is non-monotonic. np.fft.fftfreq() returns frequencies in wrap-around order
-    # [0..+..,-..], so when plotting in Hz we fftshift the frequency axis and reorder Z
-    # accordingly.
     if use_frequency_axis:
-        heatmap_y = np.fft.fftshift(np.fft.fftfreq(Z.shape[0], d=1.0 / fs))
-        Z_heatmap = np.fft.fftshift(Z, axes=0)
+        # Audio input is real-valued and we operate on an analytic signal; in both cases
+        # the physically meaningful spectrum is the one-sided (nonnegative) frequencies.
+        # Using a one-sided axis also guarantees a monotonic y-axis for Plotly.
+        n_fft = Z.shape[0]
+        n_pos = (n_fft // 2) + 1
+        heatmap_y = np.fft.rfftfreq(n_fft, d=1.0 / fs)
+        Z_heatmap = Z[:n_pos, :]
         heatmap_y_label = "Frequency (Hz)"
     else:
         heatmap_y = bins
