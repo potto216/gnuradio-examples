@@ -112,7 +112,7 @@ def run_analysis(args):
         # Convert linear power to dB for better visibility of noise vs signal.
         # Avoid -inf by flooring at a small positive value.
         eps = 1e-12
-        Z_vis = 10.0 * np.log10(np.maximum(Z_heatmap, eps))
+        Z_vis = 10.0 * np.log10(Z_heatmap + eps)
         heatmap_units = "dB"
         heatmap_colorbar_title = "Power (dB)"
     else:
@@ -197,6 +197,9 @@ def run_analysis(args):
                 x=t,
                 y=heatmap_y,
                 z=Z_vis,
+                colorscale=args.heatmap_colorscale,
+                zmin=args.heatmap_zmin,
+                zmax=args.heatmap_zmax,
                 colorbar=dict(title=heatmap_colorbar_title),
                 name="fft_power",
                 hovertemplate=(
@@ -278,12 +281,18 @@ def parse_args(argv=None):
 
     p.add_argument("--frequency-axis", action="store_true", help="Use frequency (Hz) instead of FFT bin index for heatmap y-axis")
     p.add_argument("--heatmap-db", action="store_true", help="Plot CFAR bin-power heatmap in dB (10*log10) instead of linear")
+    p.add_argument("--heatmap-colorscale", default="Viridis", help="Plotly colorscale name for CFAR heatmap")
+    p.add_argument("--heatmap-zmin", type=float, default=None, help="Lower color scale bound for heatmap")
+    p.add_argument("--heatmap-zmax", type=float, default=None, help="Upper color scale bound for heatmap")
 
     p.add_argument("--pfa-min", type=float, default=1e-7)
     p.add_argument("--pfa-max", type=float, default=1e-1)
     p.add_argument("--pfa-points", type=int, default=60)
     p.add_argument("--plots", choices=["none", "html", "png"], default="html")
-    return p.parse_args(argv)
+    args = p.parse_args(argv)
+    if args.heatmap_zmin is not None and args.heatmap_zmax is not None and not (args.heatmap_zmin < args.heatmap_zmax):
+        raise ValueError("Invalid heatmap range: --heatmap-zmin must be less than --heatmap-zmax.")
+    return args
 
 
 def main(argv=None):
