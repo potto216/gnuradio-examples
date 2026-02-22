@@ -167,12 +167,32 @@ def run_analysis(args):
 
         pfa_vals = np.logspace(np.log10(args.pfa_min), np.log10(args.pfa_max), args.pfa_points)
         ntrain = int(cfar["noise_bins"].size)
-        fig.add_trace(go.Scatter(x=pfa_vals, y=[ca_cfar_alpha(p, ntrain, m_sig=1) for p in pfa_vals], name="alpha m=1"), row=3, col=1)
-        fig.add_trace(go.Scatter(x=pfa_vals, y=[ca_cfar_alpha(p, ntrain, m_sig=2) for p in pfa_vals], name="alpha m=2"), row=3, col=1)
+        fig.add_trace(
+            go.Scatter(
+                x=pfa_vals,
+                y=[ca_cfar_alpha(p, ntrain, m_sig=1) for p in pfa_vals],
+                name="alpha m=1",
+                mode="lines+markers",
+            ),
+            row=3,
+            col=1,
+        )
+        fig.add_trace(
+            go.Scatter(
+                x=pfa_vals,
+                y=[ca_cfar_alpha(p, ntrain, m_sig=2) for p in pfa_vals],
+                name="alpha m=2",
+                mode="lines+markers",
+            ),
+            row=3,
+            col=1,
+        )
         fig.update_xaxes(type="log", row=3, col=1, title_text="Pfa")
         fig.update_yaxes(title_text="alpha", row=3, col=1)
         fig.update_xaxes(title_text="time (s)", row=1, col=1)
+        fig.update_yaxes(title_text="power (linear)", row=1, col=1)
         fig.update_xaxes(title_text="FFT bin", row=2, col=1)
+        fig.update_yaxes(title_text="FFT bin power (linear)", row=2, col=1)
         fig.update_layout(title="FSK CFAR Analysis", height=1000)
 
         if args.plots == "html":
