@@ -182,12 +182,18 @@ def run_analysis(args):
             fh.write(f"{int(b)},{float(v):.9f},detect\n")
 
     if args.plots != "none" and go is not None and make_subplots is not None:
-        fig = make_subplots(rows=4, cols=1, vertical_spacing=0.08, subplot_titles=(
-            "CFAR statistic vs threshold",
-            "CFAR FFT Bin Power vs Time",
-            "Focus window FFT bins by CFAR band",
-            "alpha vs Pfa",
-        ))
+        fig = make_subplots(
+            rows=4,
+            cols=1,
+            row_heights=[0.18, 0.46, 0.2, 0.16],
+            vertical_spacing=0.045,
+            subplot_titles=(
+                "CFAR statistic vs threshold",
+                "CFAR FFT Bin Power vs Time",
+                "Focus window FFT bins by CFAR band",
+                "alpha vs Pfa",
+            ),
+        )
         fig.add_trace(go.Scatter(x=t, y=[r["stat"] for r in rows], name="stat", mode="lines+markers"), row=1, col=1)
         fig.add_trace(go.Scatter(x=t, y=[r["threshold"] for r in rows], name="threshold", mode="lines+markers"), row=1, col=1)
         fig.add_vline(x=focus["idx_center"] / fs, line_dash="dot", line_color="black", row=1, col=1)
@@ -246,7 +252,7 @@ def run_analysis(args):
         fig.update_yaxes(title_text=heatmap_y_label, row=2, col=1)
         fig.update_xaxes(title_text="FFT bin", row=3, col=1)
         fig.update_yaxes(title_text="FFT bin power (linear)", row=3, col=1)
-        fig.update_layout(title="FSK CFAR Bin Power Over Time", height=1300)
+        fig.update_layout(title="FSK CFAR Bin Power Over Time", height=1360)
 
         if args.plots == "html":
             fig.write_html(str(base.with_suffix(".plot.html")), include_plotlyjs="cdn", full_html=True)
