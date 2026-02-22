@@ -93,6 +93,9 @@ def run_analysis(args):
     Z = np.stack([r["fft_power"] for r in rows], axis=0).T
     t = np.array([r["time_center_s"] for r in rows])
     bins = np.arange(Z.shape[0])
+    use_frequency_axis = bool(getattr(args, "frequency_axis", False))
+    heatmap_y = np.fft.fftfreq(Z.shape[0], d=1.0 / fs) if use_frequency_axis else bins
+    heatmap_y_label = "Frequency (Hz)" if use_frequency_axis else "FFT Bin"
 
     centers = np.array([r["idx_center"] for r in rows])
     focus_i = int(np.argmin(np.abs(centers - center)))
@@ -166,7 +169,22 @@ def run_analysis(args):
         fig.add_trace(go.Scatter(x=t, y=[r["threshold"] for r in rows], name="threshold", mode="lines+markers"), row=1, col=1)
         fig.add_vline(x=focus["idx_center"] / fs, line_dash="dot", line_color="black", row=1, col=1)
 
-        fig.add_trace(go.Heatmap(x=t, y=bins, z=Z, colorbar=dict(title="Power"), name="fft_power"), row=2, col=1)
+        fig.add_trace(
+            go.Heatmap(
+                x=t,
+                y=heatmap_y,
+                z=Z,
+                colorbar=dict(title="Power (linear)"),
+                name="fft_power",
+                hovertemplate=(
+                    "Time: %{x:.6f} s<br>"
+                    + ("Frequency: %{y:.2f} Hz<br>" if use_frequency_axis else "FFT Bin: %{y:d}<br>")
+                    + "Power: %{z:.6g}<extra></extra>"
+                ),
+            ),
+            row=2,
+            col=1,
+        )
 
         fig.add_trace(go.Scatter(x=cfar["noise_bins"], y=cfar["noise_vals"], name="noise", mode="markers", marker=dict(size=5)), row=3, col=1)
         fig.add_trace(go.Scatter(x=cfar["guard_bins"], y=cfar["guard_vals"], name="guard", mode="markers", marker=dict(size=6)), row=3, col=1)
@@ -198,11 +216,11 @@ def run_analysis(args):
         fig.update_yaxes(title_text="alpha", row=4, col=1)
         fig.update_xaxes(title_text="time (s)", row=1, col=1)
         fig.update_yaxes(title_text="power (linear)", row=1, col=1)
-        fig.update_xaxes(title_text="time (s)", row=2, col=1)
-        fig.update_yaxes(title_text="FFT bin", row=2, col=1)
+        fig.update_xaxes(title_text="Time (s)", row=2, col=1)
+        fig.update_yaxes(title_text=heatmap_y_label, row=2, col=1)
         fig.update_xaxes(title_text="FFT bin", row=3, col=1)
         fig.update_yaxes(title_text="FFT bin power (linear)", row=3, col=1)
-        fig.update_layout(title="FSK CFAR Analysis", height=1300)
+        fig.update_layout(title="FSK CFAR Bin Power Over Time", height=1300)
 
         if args.plots == "html":
             fig.write_html(str(base.with_suffix(".plot.html")), include_plotlyjs="cdn", full_html=True)
