@@ -94,8 +94,19 @@ def run_analysis(args):
     t = np.array([r["time_center_s"] for r in rows])
     bins = np.arange(Z.shape[0])
     use_frequency_axis = bool(getattr(args, "frequency_axis", False))
-    heatmap_y = np.fft.fftfreq(Z.shape[0], d=1.0 / fs) if use_frequency_axis else bins
-    heatmap_y_label = "Frequency (Hz)" if use_frequency_axis else "FFT Bin"
+
+    # NOTE: Plotly heatmaps can fail to render (or render as blank) if the coordinate
+    # axis is non-monotonic. np.fft.fftfreq() returns frequencies in wrap-around order
+    # [0..+..,-..], so when plotting in Hz we fftshift the frequency axis and reorder Z
+    # accordingly.
+    if use_frequency_axis:
+        heatmap_y = np.fft.fftshift(np.fft.fftfreq(Z.shape[0], d=1.0 / fs))
+        Z_heatmap = np.fft.fftshift(Z, axes=0)
+        heatmap_y_label = "Frequency (Hz)"
+    else:
+        heatmap_y = bins
+        Z_heatmap = Z
+        heatmap_y_label = "FFT Bin"
 
     centers = np.array([r["idx_center"] for r in rows])
     focus_i = int(np.argmin(np.abs(centers - center)))
@@ -173,7 +184,7 @@ def run_analysis(args):
             go.Heatmap(
                 x=t,
                 y=heatmap_y,
-                z=Z,
+                z=Z_heatmap,
                 colorbar=dict(title="Power (linear)"),
                 name="fft_power",
                 hovertemplate=(
@@ -252,6 +263,8 @@ def parse_args(argv=None):
     p.add_argument("--end-sample", type=int, default=None)
     p.add_argument("--center-sample", type=int, default=None)
     p.add_argument("--span-samples", type=int, default=None)
+
+    p.add_argument("--frequency-axis", action="store_true", help="Use frequency (Hz) instead of FFT bin index for heatmap y-axis")
 
     p.add_argument("--pfa-min", type=float, default=1e-7)
     p.add_argument("--pfa-max", type=float, default=1e-1)

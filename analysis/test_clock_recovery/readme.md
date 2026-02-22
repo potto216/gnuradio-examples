@@ -87,12 +87,19 @@ python fsk_cli.py rx \
 Enable HTML plots (interactive):
 
 ```bash
+python ./analysis/test_clock_recovery/fsk_cli.py rx \
+  --wav /home/user/data/audio/fsk/rx/packet_02_gnuradio_c01_clean_with_silence_rcv_bose_speaker.wav \
+  --out-base /home/user/data/audio/fsk/rx/results/bose/packet_02_bit_overlay \
+  --truth-json /home/user/data/audio/fsk/tx/packet_02.json \
+  --plots html
+```
+
 python fsk_cli.py rx \
   --wav packet_02_gnuradio_c01_clean_with_silence_rcv_bose_speaker.wav \
   --out-base results/bose/packet_02_bit_overlay \
   --truth-json packet_02.json \
-  --plots html
-```
+  --plots htmlls 
+
 
 PNG export instead:
 
@@ -196,7 +203,92 @@ For each RX run (with plots enabled):
 
 ---
 
-## 8. Tips / Troubleshooting
+## 8. CFAR Deep-Dive (Using `fsk_cfar_cli.py`)
+
+`fsk_cli.py rx` computes a CFAR-style detection metric as part of packet finding. If you want to inspect and tune CFAR behavior in isolation (window length, hop size, guard bins, Pfa, threshold scaling), use `fsk_cfar_cli.py`.
+
+This tool slides a short FFT window over a chosen time region, computes:
+- `stat = |X(f0)|^2 + |X(f1)|^2`
+- A CA-CFAR threshold from the remaining FFT bins (excluding guard bins around the detection bins)
+
+### 8.1 Quick Start
+
+Analyze an entire WAV (or at least a long default span) and write outputs under `results/cfar/...`:
+
+```bash
+python fsk_cfar_cli.py \
+  --wav packet_02_gnuradio_c01_clean_with_silence_rcv_loopback.wav \
+  --out-base results/cfar/packet_02_loopback \
+  --baud 100 \
+  --f0 1000 \
+  --f1 2000 \
+  --plots html
+```
+
+user@ubuntu-node-01:~/workspace/gnuradio-examples$ ls ~/data/audio/fsk/rx
+packet_02_gnuradio_c01_clean_with_silence_rcv_bose_speaker.wav  results
+
+python fsk_cfar_cli.py \
+  --wav ~/data/audio/fsk/rx/packet_02_gnuradio_c01_clean_with_silence_rcv_bose_speaker.wav \
+  --out-base ~/data/audio/fsk/rx/results \
+  --baud 100 \
+  --f0 1000 \
+  --f1 2000 \
+  --plots html
+
+
+
+Focus the analysis on a specific region (recommended). You can specify a time-centered region with `--center-time` + `--span-time`:
+
+```bash
+python fsk_cfar_cli.py \
+  --wav packet_02_gnuradio_c01_clean_with_silence_rcv_loopback.wav \
+  --out-base results/cfar/packet_02_loopback_centered \
+  --center-time 0.30 \
+  --span-time 0.80 \
+  --win-symbols 2 \
+  --hop-symbols 1 \
+  --guard-bins 2 \
+  --pfa 1e-3 \
+  --threshold-scale 10.0 \
+  --plots html
+```
+
+### 8.2 Common Options
+
+CFAR / windowing:
+- `--win-symbols`: FFT window length in symbols (default 2)
+- `--hop-symbols`: step size between windows in symbols (default 1)
+- `--guard-bins`: number of FFT bins excluded around each detection bin (default 2)
+- `--pfa`: desired false alarm probability for CA-CFAR alpha calculation (default 1e-3)
+- `--threshold-scale`: extra multiplier to make the threshold more/less conservative (default 10.0)
+
+Analysis region selection (choose one style):
+- `--start-time`, `--end-time` (seconds)
+- `--start-sample`, `--end-sample`
+- `--center-time` + `--span-time`
+- `--center-sample` + `--span-samples`
+
+Plots:
+- `--plots none|html|png` (default `html`)
+- `--frequency-axis`: Use frequency (Hz) instead of FFT bin index on the heatmap y-axis
+
+### 8.3 Outputs
+
+Given `--out-base results/cfar/packet_02_loopback`, the tool writes:
+- `results/cfar/packet_02_loopback.json`: Summary + chosen focus window
+- `results/cfar/packet_02_loopback.windows.csv`: One row per sliding window (stat, threshold, etc.)
+- `results/cfar/packet_02_loopback.focus_bins.csv`: FFT bins in the focus window labeled as `noise|guard|detect`
+- `results/cfar/packet_02_loopback.plot.html` or `.plot.png`: CFAR plots (if enabled)
+
+### 8.4 Notes / Gotchas
+- If you see: `Analysis slice shorter than CFAR window`, increase `--span-time/--span-samples` or reduce `--win-symbols`.
+- If your WAV header rate differs from the analysis rate you want to assume, use `--fs` to override.
+- PNG export requires Plotly + kaleido; HTML export does not.
+
+---
+
+## 9. Tips / Troubleshooting
 - If plots are blank: ensure Plotly installed (`pip show plotly`) and kaleido (for PNG).
 - If bit overlays misalign: adjust `--det-time-adjust` gradually (e.g. ±0.01 s).
 - If no packets are found: inspect detection plot (enable `--plots html`) to confirm thresholds vs energy.
@@ -204,7 +296,7 @@ For each RX run (with plots enabled):
 
 ---
 
-## 9. Future Enhancements (Ideas)
+## 10. Future Enhancements (Ideas)
 - Adaptive timing refinement after first decode.
 - Soft metrics export (LLR-like).
 - Multi-packet auto batch decode + summary CSV.
