@@ -108,6 +108,18 @@ def run_analysis(args):
         Z_heatmap = Z
         heatmap_y_label = "FFT Bin"
 
+    if getattr(args, "heatmap_db", False):
+        # Convert linear power to dB for better visibility of noise vs signal.
+        # Avoid -inf by flooring at a small positive value.
+        eps = 1e-12
+        Z_vis = 10.0 * np.log10(np.maximum(Z_heatmap, eps))
+        heatmap_units = "dB"
+        heatmap_colorbar_title = "Power (dB)"
+    else:
+        Z_vis = Z_heatmap
+        heatmap_units = "linear"
+        heatmap_colorbar_title = "Power (linear)"
+
     centers = np.array([r["idx_center"] for r in rows])
     focus_i = int(np.argmin(np.abs(centers - center)))
     focus = rows[focus_i]
@@ -184,13 +196,13 @@ def run_analysis(args):
             go.Heatmap(
                 x=t,
                 y=heatmap_y,
-                z=Z_heatmap,
-                colorbar=dict(title="Power (linear)"),
+                z=Z_vis,
+                colorbar=dict(title=heatmap_colorbar_title),
                 name="fft_power",
                 hovertemplate=(
                     "Time: %{x:.6f} s<br>"
                     + ("Frequency: %{y:.2f} Hz<br>" if use_frequency_axis else "FFT Bin: %{y:d}<br>")
-                    + "Power: %{z:.6g}<extra></extra>"
+                    + f"Power ({heatmap_units}): %{{z:.6g}}<extra></extra>"
                 ),
             ),
             row=2,
@@ -265,6 +277,7 @@ def parse_args(argv=None):
     p.add_argument("--span-samples", type=int, default=None)
 
     p.add_argument("--frequency-axis", action="store_true", help="Use frequency (Hz) instead of FFT bin index for heatmap y-axis")
+    p.add_argument("--heatmap-db", action="store_true", help="Plot CFAR bin-power heatmap in dB (10*log10) instead of linear")
 
     p.add_argument("--pfa-min", type=float, default=1e-7)
     p.add_argument("--pfa-max", type=float, default=1e-1)

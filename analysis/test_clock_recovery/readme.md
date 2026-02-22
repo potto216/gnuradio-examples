@@ -225,19 +225,6 @@ python fsk_cfar_cli.py \
   --plots html
 ```
 
-user@ubuntu-node-01:~/workspace/gnuradio-examples$ ls ~/data/audio/fsk/rx
-packet_02_gnuradio_c01_clean_with_silence_rcv_bose_speaker.wav  results
-
-python fsk_cfar_cli.py \
-  --wav ~/data/audio/fsk/rx/packet_02_gnuradio_c01_clean_with_silence_rcv_bose_speaker.wav \
-  --out-base ~/data/audio/fsk/rx/results \
-  --baud 100 \
-  --f0 1000 \
-  --f1 2000 \
-  --plots html
-
-
-
 Focus the analysis on a specific region (recommended). You can specify a time-centered region with `--center-time` + `--span-time`:
 
 ```bash
@@ -272,6 +259,7 @@ Analysis region selection (choose one style):
 Plots:
 - `--plots none|html|png` (default `html`)
 - `--frequency-axis`: Use frequency (Hz) instead of FFT bin index on the heatmap y-axis
+- `--heatmap-db`: Plot the heatmap in dB instead of linear
 
 ### 8.3 Outputs
 
