@@ -187,7 +187,7 @@ def run_analysis(args):
             rows=4,
             cols=1,
             row_heights=[0.18, 0.46, 0.2, 0.16],
-            vertical_spacing=0.045,
+            vertical_spacing=0.09,
             subplot_titles=(
                 "CFAR statistic vs threshold",
                 "CFAR FFT Bin Power vs Time",
@@ -207,7 +207,7 @@ def run_analysis(args):
                 colorscale=args.heatmap_colorscale,
                 zmin=args.heatmap_zmin,
                 zmax=args.heatmap_zmax,
-                colorbar=dict(title=heatmap_colorbar_title),
+                colorbar=dict(title=heatmap_colorbar_title, x=1.08, len=0.46, y=0.63),
                 name="fft_power",
                 hovertemplate=(
                     "Time: %{x:.6f} s<br>"
@@ -253,7 +253,15 @@ def run_analysis(args):
         fig.update_yaxes(title_text=heatmap_y_label, row=2, col=1)
         fig.update_xaxes(title_text="FFT bin", row=3, col=1)
         fig.update_yaxes(title_text="FFT bin power (linear)", row=3, col=1)
-        fig.update_layout(title="FSK CFAR Bin Power Over Time", height=1360)
+        fig.update_layout(
+            title="FSK CFAR Bin Power Over Time",
+            height=1360,
+            margin=dict(t=120, b=90, l=80, r=180),
+            legend=dict(orientation="h", x=0.0, y=1.08, xanchor="left", yanchor="bottom"),
+        )
+
+        for annotation in fig.layout.annotations:
+            annotation["yshift"] = 8
 
         if args.plots == "html":
             fig.write_html(str(base.with_suffix(".plot.html")), include_plotlyjs="cdn", full_html=True)
