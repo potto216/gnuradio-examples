@@ -207,6 +207,8 @@ For each RX run (with plots enabled):
 
 `fsk_cli.py rx` computes a CFAR-style detection metric as part of packet finding. If you want to inspect and tune CFAR behavior in isolation (window length, hop size, guard bins, Pfa, threshold scaling), use `fsk_cfar_cli.py`.
 
+For a parameter-by-parameter guide that explains how the CLI settings relate to packet placement, sliding windows, guard bins, and threshold behavior, see `fsk_cfar_cli_parameter_guide.md`.
+
 This tool slides a short FFT window over a chosen time region, computes:
 - `stat = |X(f0)|^2 + |X(f1)|^2`
 - A CA-CFAR threshold from the remaining FFT bins (excluding guard bins around the detection bins)
@@ -241,25 +243,133 @@ python fsk_cfar_cli.py \
   --plots html
 ```
 
-### 8.2 Common Options
+### 8.2 Command-Line Options, Units, and Tuning Notes
 
-CFAR / windowing:
-- `--win-symbols`: FFT window length in symbols (default 2)
-- `--hop-symbols`: step size between windows in symbols (default 1)
-- `--guard-bins`: number of FFT bins excluded around each detection bin (default 2)
-- `--pfa`: desired false alarm probability for CA-CFAR alpha calculation (default 1e-3)
-- `--threshold-scale`: extra multiplier to make the threshold more/less conservative (default 10.0)
+The CFAR CLI options mainly control four things:
+- Which part of the recording gets analyzed
+- How wide the sliding FFT windows are
+- Which bins are treated as signal, guard, or noise
+- How conservative the threshold becomes
 
-Analysis region selection (choose one style):
-- `--start-time`, `--end-time` (seconds)
-- `--start-sample`, `--end-sample`
-- `--center-time` + `--span-time`
-- `--center-sample` + `--span-samples`
+#### Analysis region selection
 
-Plots:
-- `--plots none|html|png` (default `html`)
-- `--frequency-axis`: Use frequency (Hz) instead of FFT bin index on the heatmap y-axis (one-sided: 0..Nyquist)
-- `--heatmap-db`: Plot the heatmap in dB instead of linear
+Choose either an absolute range or a centered range:
+- `--start-time`, `--end-time`: analysis bounds in seconds
+- `--start-sample`, `--end-sample`: analysis bounds in samples
+- `--center-time`, `--span-time`: centered analysis region in seconds
+- `--center-sample`, `--span-samples`: centered analysis region in samples
+
+Notes:
+- `--span-time` is in seconds. `--span-samples` is in raw samples.
+- `--center-time` / `--center-sample` with a span override the corresponding start/end settings in the implementation.
+- If you omit explicit start/end and center/span, the tool defaults to a broad region based on the file length and default span.
+- A centered region is usually the fastest way to inspect a suspected packet location.
+
+Practical hints:
+- Start with `--center-time` plus `--span-time` when you know roughly where the packet is.
+- Make the span wide enough to include the full packet plus some silence or background on both sides. This helps the heatmap and threshold trace stay interpretable.
+- If the selected region is too tight, the packet can appear clipped and the focus window may land on the wrong portion of the packet.
+- If the region is too wide, plots become harder to read and tuning gets slower, but the detector still runs.
+
+#### Signal and sample-rate options
+
+- `--fs`: analysis sample rate in Hz. Default `0`, which means use the WAV header sample rate.
+- `--baud`: symbol rate in symbols/second. Default `100`.
+- `--f0`, `--f1`: target FSK tones in Hz. Defaults `1000` and `2000`.
+
+Notes:
+- `--fs` only changes the analysis math. It does not resample the WAV.
+- `--baud` affects samples-per-symbol, which then affects both the window length and hop size in samples.
+- `--f0` and `--f1` are converted to FFT bins using the current window length, so changing `--win-symbols`, `--baud`, or `--fs` can shift the exact detection bins.
+
+Practical hints:
+- Only override `--fs` when the WAV metadata is wrong or you intentionally want different analysis math.
+- Keep `--baud` matched to the transmitter. A wrong baud rate changes window sizing and can make the detector look at the wrong bins.
+- If the packet is visible in the heatmap but `stat` is weak, turn on `--frequency-axis --heatmap-db` and verify that the energy ridges line up with `--f0` and `--f1`.
+
+#### Windowing and CFAR controls
+
+- `--win-symbols`: FFT window length in symbols. Default `2`.
+- `--hop-symbols`: step size between analysis windows in symbols. Default `1`.
+- `--guard-bins`: number of FFT bins excluded on each side of each detection bin. Default `2`.
+- `--pfa`: desired false alarm probability for CA-CFAR alpha calculation. Default `1e-3`.
+- `--threshold-scale`: extra multiplier applied after the CFAR threshold is computed. Default `10.0`.
+
+Units and side effects:
+- `--win-symbols` and `--hop-symbols` are not seconds; they are converted to samples through the configured baud rate.
+- Larger `--win-symbols` gives more energy averaging and often smoother traces, but it also smears packet edges in time.
+- Smaller `--win-symbols` sharpens timing but can make the statistic noisier.
+- Smaller `--hop-symbols` gives denser time sampling and smoother-looking curves, but increases the number of windows and output rows.
+- Larger `--hop-symbols` runs faster, but can skip over short transitions or make the plots look coarse.
+- Larger `--guard-bins` protects the noise estimate from tone leakage, but also removes more training bins from the CFAR noise pool.
+- Smaller `--pfa` raises the threshold and makes detection more conservative.
+- Larger `--pfa` lowers the threshold and makes detection easier to trigger.
+- `--threshold-scale` is the quickest coarse sensitivity knob: higher is more conservative, lower is more permissive.
+
+Practical hints:
+- Start with `--win-symbols 2 --hop-symbols 1`. That is the current default tuning baseline.
+- Increase `--win-symbols` to `3` or `4` if the statistic is too noisy.
+- Keep `--hop-symbols 1` while tuning so you do not hide timing details.
+- Increase `--guard-bins` if the focus-window plot shows strong energy spilling into neighboring bins around `f0` or `f1`.
+- Lower `--threshold-scale` before changing `--pfa` when you just need a quick sensitivity adjustment.
+
+#### Plot and output controls
+
+- `--plots none|html|png`: output plot format. Default `html`.
+- `--out-base`: output file prefix and directory.
+- `--frequency-axis`: use frequency in Hz instead of FFT bin number on the heatmap and focus plot.
+- `--heatmap-db`: render the heatmap in dB. This is the default visual behavior.
+- `--heatmap-linear`: render the heatmap in linear power.
+- `--focus-db`: render the focus-window spectrum in dB.
+- `--focus-linear`: render the focus-window spectrum in linear power. This is the default.
+- `--focus-freq-max-hz`: upper x-axis limit in Hz for the focus plot when `--frequency-axis` is enabled. Default `10000`.
+- `--focus-region-overlay none|lines|box`: mark the selected focus-window time range on the heatmap. Default `none`.
+- `--heatmap-colorscale`: Plotly colorscale name. Default `Viridis`.
+- `--heatmap-zmin`, `--heatmap-zmax`: lower and upper heatmap color limits.
+- `--no-stat-plot`, `--no-heatmap-plot`, `--no-focus-plot`, `--no-alpha-plot`: disable individual subplot panels.
+
+Units and side effects:
+- `--heatmap-zmin` and `--heatmap-zmax` use the same units as the selected heatmap scale: dB if the heatmap is in dB, linear power otherwise.
+- `--focus-freq-max-hz` only affects the focus plot, and only when `--frequency-axis` is enabled.
+- If both `--heatmap-zmin` and `--heatmap-zmax` are provided, `zmin` must be less than `zmax`.
+- `--plots png` requires Plotly image export support such as `kaleido`; `html` does not.
+- Disabling subplots reduces plot size and clutter, but the corresponding information is still available in the JSON and CSV outputs where applicable.
+
+Practical hints:
+- Use `--plots html` while tuning because hover labels make it much easier to inspect time, bin, and power values.
+- Use `--frequency-axis --heatmap-db` when you are reasoning about `f0`, `f1`, frequency offset, or guard-bin width.
+- Use `--focus-region-overlay box` when presenting results because it makes the selected focus window obvious in the heatmap.
+- Set `--out-base` for every experiment so each run writes to a distinct result set.
+
+#### Alpha sweep options
+
+- `--pfa-min`: minimum Pfa used in the alpha sweep subplot. Default `1e-7`.
+- `--pfa-max`: maximum Pfa used in the alpha sweep subplot. Default `1e-1`.
+- `--pfa-points`: number of log-spaced points used in the alpha sweep subplot. Default `60`.
+
+Notes:
+- These options only affect the alpha-vs-Pfa subplot.
+- They do not change the actual packet-analysis threshold unless you also change `--pfa`.
+- If you disable the alpha plot with `--no-alpha-plot`, these settings have no visible plotting effect.
+
+Quick rule of thumb:
+- Use `--center-time` plus `--span-time` for the first pass.
+- Put the packet fully inside the selected region with margin on both sides.
+- Verify `f0` and `f1` in `--frequency-axis --heatmap-db` mode.
+- Tune `--threshold-scale` before making finer CFAR changes.
+
+Example (focus in dB + shaded focus window on heatmap):
+
+```bash
+python fsk_cfar_cli.py \
+  --wav packet_02_gnuradio_c01_clean_with_silence_rcv_loopback.wav \
+  --out-base results/cfar/packet_02_loopback_focus_db \
+  --center-time 0.30 \
+  --span-time 0.80 \
+  --focus-db \
+  --focus-region-overlay box \
+  --plots html
+```
 
 ### 8.3 Outputs
 
@@ -288,5 +398,107 @@ Given `--out-base results/cfar/packet_02_loopback`, the tool writes:
 - Adaptive timing refinement after first decode.
 - Soft metrics export (LLR-like).
 - Multi-packet auto batch decode + summary CSV.
+
+---
+
+## Appendix A. Choosing Parameters For Offline 256-Bit Packet Search
+
+This appendix summarizes how to choose CLI parameters with the current code when the packet size is fixed at 256 bits (32 bytes), processing is offline, and there is no preamble.
+
+### A.1 Key Point
+
+Even though processing is offline, the best `--win-symbols` value is usually not the full packet length.
+
+Why:
+- A packet-length window does maximize total accumulated tone energy when the window fully overlaps the packet.
+- But in the current detector, packet finding is based on a run of above-threshold sliding windows, not on a single exact packet-center estimate.
+- A very long window smears the packet edges in time, so it is good for saying "there is packet energy around here" but not as good for saying "the packet starts exactly here".
+- After CFAR detection, the code still does a separate timing search to refine symbol alignment, so a packet-length detection window does not replace the later start refinement.
+
+### A.2 Why Not Use `--win-symbols 256`
+
+With the current implementation, a packet-length window has several drawbacks:
+- The CFAR statistic becomes broad because many nearby window positions overlap most of the same packet energy.
+- Start and stop localization get worse because the transition from noise-only to packet-overlap is spread over a long interval.
+- The detector's run-length logic becomes less informative when the window is as long as or longer than the packet, because only a small number of windows can fully overlap the packet.
+- Any small frequency mismatch, sample-rate mismatch, or trimming error is accumulated over the entire packet-length FFT.
+
+In short: a full-packet window is a stronger energy integrator, but a weaker boundary locator.
+
+### A.3 What Works Better In The Current Code
+
+Use the detector in two stages:
+- First, use a moderate CFAR window to identify the packet region.
+- Then let the existing demodulation timing search refine the start index.
+
+That matches how the current baseline code is structured:
+- CFAR detection finds a plausible packet region from overlapping windows.
+- Demodulation then searches symbol offsets and intra-symbol timing to improve alignment.
+
+### A.4 Recommended Starting Parameters
+
+For `fsk_cfar_cli.py` when visually tuning an offline capture:
+- `--center-time` plus `--span-time` to bracket the suspected packet with margin on both sides
+- `--win-symbols 8` to `16`
+- `--hop-symbols 1`
+- `--guard-bins 2`
+- `--pfa 1e-3`
+- `--threshold-scale 10.0` as a first pass, then lower it if the packet is visible but does not cross threshold
+- `--frequency-axis --heatmap-db` when checking whether the tones line up with `f0` and `f1`
+
+Why this range:
+- `--win-symbols 8` to `16` usually gives enough averaging to make the packet stand out clearly.
+- It is still short enough to preserve useful timing information near the packet edges.
+- `--hop-symbols 1` is appropriate offline because runtime is usually not the limiting factor and denser windows make the plots easier to interpret.
+
+### A.5 Practical Guidance For `--span-time`
+
+Set `--span-time` large enough to include:
+- the full 256-bit packet
+- some non-packet time before it
+- some non-packet time after it
+
+This helps because:
+- the threshold trace is easier to interpret when you can compare packet and non-packet regions
+- the heatmap is more useful when the packet is not clipped at the plot edges
+- the selected focus window is less likely to land on an ambiguous edge case
+
+If the span is too small, the packet can be clipped. If it is too large, the packet still appears, but the plots become less convenient to inspect.
+
+### A.6 Suggested Offline Tuning Workflow
+
+1. Start with a centered region around the suspected packet using `--center-time` and `--span-time`.
+2. Use `--win-symbols 8` or `16` and `--hop-symbols 1`.
+3. Turn on `--frequency-axis --heatmap-db` and confirm that the visible ridges align with `--f0` and `--f1`.
+4. Check whether the packet region rises above threshold in the stat plot.
+5. If the packet is visible but does not cross threshold, lower `--threshold-scale` before making more aggressive changes.
+6. If nearby leakage is inflating the noise estimate, increase `--guard-bins` slightly.
+7. Once the CFAR region looks correct, use the normal decode path to let the current demodulator refine the start timing.
+
+### A.7 Example Starting Command
+
+```bash
+python fsk_cfar_cli.py \
+  --wav packet_02_gnuradio_c01_clean_with_silence_rcv_loopback.wav \
+  --out-base results/cfar/packet_02_loopback_offline_search \
+  --center-time 0.30 \
+  --span-time 0.80 \
+  --win-symbols 16 \
+  --hop-symbols 1 \
+  --guard-bins 2 \
+  --pfa 1e-3 \
+  --threshold-scale 10.0 \
+  --frequency-axis \
+  --heatmap-db \
+  --plots html
+```
+
+### A.8 Rule Of Thumb
+
+For the current code and a fixed 256-bit packet with no preamble:
+- Do not use a full-packet CFAR window as the default search setting.
+- Use a moderate window to get a reliable packet region.
+- Let the existing timing-refinement logic handle the exact symbol alignment.
+- Optimize first for robust packet-region detection, not for a single-window energy maximum.
 
 
