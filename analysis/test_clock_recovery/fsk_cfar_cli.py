@@ -18,6 +18,85 @@ from fsk_cfar import analyze_cfar_window, ca_cfar_alpha
 from fsk_common import now_iso_utc, read_wav, save_json
 
 
+def _gaussian_pdf(x: np.ndarray, mu: float, sigma: float) -> np.ndarray:
+    if sigma <= 0.0:
+        return np.zeros_like(x, dtype=float)
+    return (1.0 / (sigma * np.sqrt(2.0 * np.pi))) * np.exp(-0.5 * ((x - mu) / sigma) ** 2)
+
+
+def _exponential_pdf(x: np.ndarray, lam: float) -> np.ndarray:
+    y = np.zeros_like(x, dtype=float)
+    if lam <= 0.0:
+        return y
+    mask = x >= 0.0
+    y[mask] = lam * np.exp(-lam * x[mask])
+    return y
+
+
+def _fit_distribution_band(vals: np.ndarray, hist_bins: int, hist_density: bool, fit_models: str) -> dict:
+    arr = np.asarray(vals, dtype=float)
+    if arr.size == 0:
+        return {"sample_count": 0}
+
+    hist_counts, hist_edges = np.histogram(arr, bins=hist_bins, density=hist_density)
+    hist_centers = 0.5 * (hist_edges[:-1] + hist_edges[1:])
+    hist_bin_width = float(hist_edges[1] - hist_edges[0]) if hist_edges.size > 1 else 0.0
+
+    use_gaussian = fit_models in ("gaussian", "both")
+    use_exponential = fit_models in ("exponential", "both")
+    mu = float(np.mean(arr))
+    sigma = float(np.std(arr, ddof=0))
+
+    result = {
+        "sample_count": int(arr.size),
+        "sample_mean": mu,
+        "sample_std": sigma,
+        "histogram": {
+            "bins": int(hist_bins),
+            "density": bool(hist_density),
+            "counts": hist_counts.tolist(),
+            "bin_edges": hist_edges.tolist(),
+            "bin_centers": hist_centers.tolist(),
+            "bin_width": hist_bin_width,
+        },
+    }
+
+    if use_gaussian:
+        g_pdf = _gaussian_pdf(hist_centers, mu, sigma)
+        result["gaussian"] = {
+            "mu": mu,
+            "sigma": sigma,
+            "sse_hist_density": float(np.sum((hist_counts - g_pdf) ** 2)),
+        }
+
+    if use_exponential:
+        pos = arr[arr >= 0.0]
+        if pos.size > 0:
+            mean_pos = float(np.mean(pos))
+            lam = (1.0 / mean_pos) if mean_pos > 0 else 0.0
+            exp_cdf = 1.0 - np.exp(-lam * np.sort(pos)) if lam > 0 else np.zeros(pos.size, dtype=float)
+            emp_cdf = np.arange(1, pos.size + 1, dtype=float) / float(pos.size)
+            ks_stat = float(np.max(np.abs(emp_cdf - exp_cdf))) if pos.size else 0.0
+            e_pdf = _exponential_pdf(hist_centers, lam)
+            result["exponential"] = {
+                "lambda": float(lam),
+                "domain": "x>=0",
+                "nonnegative_sample_count": int(pos.size),
+                "ks_statistic_nonnegative": ks_stat,
+                "sse_hist_density": float(np.sum((hist_counts - e_pdf) ** 2)),
+            }
+        else:
+            result["exponential"] = {
+                "lambda": None,
+                "domain": "x>=0",
+                "nonnegative_sample_count": 0,
+                "ks_statistic_nonnegative": None,
+                "sse_hist_density": None,
+            }
+
+    return result
+
+
 def _to_sample(v_time: float | None, fs: int, default: int) -> int:
     if v_time is None:
         return default
@@ -188,8 +267,20 @@ def run_analysis(args):
             "alpha": focus["alpha"],
             "noise_mean": focus["noise_mean"],
         },
+        "distribution_fit_config": {
+            "hist_bins": args.hist_bins,
+            "hist_density": args.hist_density,
+            "fit_models": args.fit_models,
+        },
         "num_windows": len(rows),
     }
+
+    distribution_fits = {
+        "noise_vals": _fit_distribution_band(cfar["noise_vals"], args.hist_bins, args.hist_density, args.fit_models),
+        "guard_vals": _fit_distribution_band(cfar["guard_vals"], args.hist_bins, args.hist_density, args.fit_models),
+        "detection_vals": _fit_distribution_band(cfar["detection_vals"], args.hist_bins, args.hist_density, args.fit_models),
+    }
+    summary_json["distribution_fits"] = distribution_fits
 
     save_json(base.with_suffix(".json"), summary_json)
 
@@ -381,6 +472,58 @@ def run_analysis(args):
         else:
             fig.write_image(str(base.with_suffix(".plot.png")), scale=2)
 
+        if include_focus_plot:
+            fit_fig = make_subplots(
+                rows=3,
+                cols=1,
+                subplot_titles=("noise_vals distribution", "guard_vals distribution", "detection_vals distribution"),
+                vertical_spacing=0.08,
+            )
+            band_order = ["noise_vals", "guard_vals", "detection_vals"]
+            band_names = {"noise_vals": "noise", "guard_vals": "guard", "detection_vals": "detect"}
+            for row_idx, band_key in enumerate(band_order, start=1):
+                fit_data = distribution_fits[band_key]
+                if fit_data.get("sample_count", 0) == 0:
+                    continue
+                hist = fit_data["histogram"]
+                x_centers = np.array(hist["bin_centers"], dtype=float)
+                y_hist = np.array(hist["counts"], dtype=float)
+                bin_width = float(hist.get("bin_width", 0.0))
+
+                fit_fig.add_trace(
+                    go.Bar(
+                        x=x_centers,
+                        y=y_hist,
+                        width=bin_width if bin_width > 0 else None,
+                        name=f"{band_names[band_key]} hist",
+                        opacity=0.45,
+                    ),
+                    row=row_idx,
+                    col=1,
+                )
+
+                if "gaussian" in fit_data:
+                    g = fit_data["gaussian"]
+                    g_pdf = _gaussian_pdf(x_centers, g["mu"], g["sigma"])
+                    fit_fig.add_trace(go.Scatter(x=x_centers, y=g_pdf, mode="lines", name=f"{band_names[band_key]} gaussian"), row=row_idx, col=1)
+                if "exponential" in fit_data and fit_data["exponential"].get("lambda") is not None:
+                    e = fit_data["exponential"]
+                    e_pdf = _exponential_pdf(x_centers, e["lambda"])
+                    fit_fig.add_trace(go.Scatter(x=x_centers, y=e_pdf, mode="lines", name=f"{band_names[band_key]} exponential"), row=row_idx, col=1)
+                fit_fig.update_yaxes(title_text="Density" if args.hist_density else "Count", row=row_idx, col=1)
+                fit_fig.update_xaxes(title_text="Power (linear)", row=row_idx, col=1)
+
+            fit_fig.update_layout(
+                title="CFAR band distribution fits (focus window)",
+                barmode="overlay",
+                height=1000,
+                margin=dict(t=90, b=70, l=80, r=60),
+            )
+            if args.plots == "html":
+                fit_fig.write_html(str(base.with_suffix(".distfit.html")), include_plotlyjs="cdn", full_html=True)
+            else:
+                fit_fig.write_image(str(base.with_suffix(".distfit.png")), scale=2)
+
     print(f"Analysis outputs written with base: {base}")
 
 
@@ -433,6 +576,14 @@ def parse_args(argv=None):
     p.add_argument("--pfa-max", type=float, default=1e-1)
     p.add_argument("--pfa-points", type=int, default=60)
     p.add_argument("--plots", choices=["none", "html", "png"], default="html")
+    p.add_argument("--hist-bins", type=int, default=50, help="Number of histogram bins for distribution-fit analysis")
+    p.add_argument("--hist-density", action="store_true", help="Use density-normalized histogram values instead of raw counts")
+    p.add_argument(
+        "--fit-models",
+        choices=["none", "gaussian", "exponential", "both"],
+        default="both",
+        help="Which distribution models to fit on CFAR focus-window band samples",
+    )
     args = p.parse_args(argv)
     if args.heatmap_zmin is not None and args.heatmap_zmax is not None and not (args.heatmap_zmin < args.heatmap_zmax):
         raise ValueError("Invalid heatmap range: --heatmap-zmin must be less than --heatmap-zmax.")
