@@ -343,6 +343,7 @@ Units and side effects:
 - `--hist-db` only affects the histogram/distribution-fit analysis. It does not change the main focus plot, heatmap, or CFAR statistic.
 - `--hist-max` is applied after any optional `--hist-db` conversion.
 - Without `--hist-drop-above-max`, values above `--hist-max` are saturated down to the limit. With `--hist-drop-above-max`, those values are excluded from the histogram and fit analysis entirely.
+- When `--hist-drop-above-max` is used, the Gaussian and exponential fit parameters are computed from the remaining values after that exclusion step, not from the original full set of values.
 - The histogram and fit output is written as a separate `*.distfit.html` or `*.distfit.png` file; it is not embedded inside the main `*.plot.html` or `*.plot.png` figure.
 - `--hist-density` changes the histogram y-axis from count to percent of samples in each bin, so the histogram bars sum to about `100%` across bins.
 - `--hist-db` changes the histogram x-axis units from linear power to dB. This usually makes broad power spreads easier to visualize, but it also changes the domain on which the Gaussian or exponential fits are computed.
