@@ -33,10 +33,49 @@ def _exponential_pdf(x: np.ndarray, lam: float) -> np.ndarray:
     return y
 
 
-def _fit_distribution_band(vals: np.ndarray, hist_bins: int, hist_density: bool, fit_models: str) -> dict:
+def _hist_transform(vals: np.ndarray, use_db: bool) -> np.ndarray:
+    arr = np.asarray(vals, dtype=float)
+    if not use_db:
+        return arr
+    eps = 1e-12
+    return 10.0 * np.log10(arr + eps)
+
+
+def _apply_hist_upper_limit(vals: np.ndarray, hist_max: float | None, hist_drop_above_max: bool) -> np.ndarray:
+    arr = np.asarray(vals, dtype=float)
+    if hist_max is None:
+        return arr
+    if hist_drop_above_max:
+        return arr[arr <= hist_max]
+    return np.minimum(arr, hist_max)
+
+
+def _fit_distribution_band(
+    vals: np.ndarray,
+    hist_bins: int,
+    hist_density: bool,
+    fit_models: str,
+    hist_db: bool,
+    hist_max: float | None,
+    hist_drop_above_max: bool,
+) -> dict:
     arr = np.asarray(vals, dtype=float)
     if arr.size == 0:
         return {"sample_count": 0}
+
+    arr = _hist_transform(arr, hist_db)
+    arr = _apply_hist_upper_limit(arr, hist_max, hist_drop_above_max)
+    if arr.size == 0:
+        return {
+            "sample_count": 0,
+            "histogram": {
+                "bins": int(hist_bins),
+                "density": bool(hist_density),
+                "scale": "dB" if hist_db else "linear",
+                "upper_limit": hist_max,
+                "drop_above_limit": bool(hist_drop_above_max),
+            },
+        }
 
     hist_counts, hist_edges = np.histogram(arr, bins=hist_bins, density=hist_density)
     hist_centers = 0.5 * (hist_edges[:-1] + hist_edges[1:])
@@ -54,6 +93,9 @@ def _fit_distribution_band(vals: np.ndarray, hist_bins: int, hist_density: bool,
         "histogram": {
             "bins": int(hist_bins),
             "density": bool(hist_density),
+            "scale": "dB" if hist_db else "linear",
+            "upper_limit": hist_max,
+            "drop_above_limit": bool(hist_drop_above_max),
             "counts": hist_counts.tolist(),
             "bin_edges": hist_edges.tolist(),
             "bin_centers": hist_centers.tolist(),
@@ -219,8 +261,44 @@ def run_analysis(args):
 
     centers = np.array([r["idx_center"] for r in rows])
     focus_i = int(np.argmin(np.abs(centers - center)))
-    focus = rows[focus_i]
-    focus_axis = np.fft.fftfreq(n_fft, d=1.0 / fs) if use_frequency_axis else bins
+    focus_window_symbols = args.focus_win_symbols if args.focus_win_symbols is not None else args.win_symbols
+    focus_nw = int(focus_window_symbols * meta.sps)
+    if focus_nw <= 0:
+        raise ValueError("Focus window must have positive length. Increase --focus-win-symbols.")
+    if focus_nw > xa.size:
+        raise ValueError("Focus window longer than analysis slice. Reduce --focus-win-symbols or increase the analysis span.")
+
+    focus_center_rel = center - start
+    focus_start_rel = max(0, min(focus_center_rel - (focus_nw // 2), xa.size - focus_nw))
+    focus_end_rel = focus_start_rel + focus_nw
+    focus_seg = xa[focus_start_rel:focus_end_rel]
+    focus_power = (np.fft.fft(focus_seg) * np.conj(np.fft.fft(focus_seg))).real
+    focus_k0 = int(round(cfg.f0 * focus_nw / fs))
+    focus_k1 = int(round(cfg.f1 * focus_nw / fs))
+    focus_cfar = analyze_cfar_window(
+        focus_power,
+        focus_k0,
+        focus_k1,
+        args.guard_bins,
+        args.pfa,
+        m_sig=1,
+        threshold_scale=args.threshold_scale,
+    )
+    focus = {
+        "window_index": focus_i,
+        "idx_start": start + focus_start_rel,
+        "idx_end": start + focus_end_rel,
+        "idx_center": start + focus_start_rel + (focus_nw // 2),
+        "stat": focus_cfar["stat"],
+        "threshold": focus_cfar["threshold"],
+        "alpha": focus_cfar["alpha"],
+        "noise_mean": focus_cfar["noise_mean"],
+        "fft_power": focus_power,
+        "cfar": focus_cfar,
+        "window_symbols": focus_window_symbols,
+        "window_samples": focus_nw,
+    }
+    focus_axis = np.fft.fftfreq(focus_nw, d=1.0 / fs) if use_frequency_axis else np.arange(focus_nw)
     focus_axis_label = "Frequency (Hz)" if use_frequency_axis else "FFT Bin"
     focus_xaxis_range = [0.0, float(args.focus_freq_max_hz)] if use_frequency_axis else None
 
@@ -248,6 +326,7 @@ def run_analysis(args):
             "win_symbols": args.win_symbols,
             "hop_symbols": args.hop_symbols,
             "threshold_scale": args.threshold_scale,
+            "focus_win_symbols": focus_window_symbols,
             "frequency_axis": args.frequency_axis,
             "heatmap_scale": "linear" if args.heatmap_linear else "dB",
             "focus_scale": "dB" if args.focus_db else "linear",
@@ -258,10 +337,12 @@ def run_analysis(args):
             "include_alpha_plot": not args.no_alpha_plot,
         },
         "focus_window": {
-            "window_index": focus_i,
+            "window_index": focus["window_index"],
             "idx_start": focus["idx_start"],
             "idx_end": focus["idx_end"],
             "idx_center": focus["idx_center"],
+            "window_symbols": focus["window_symbols"],
+            "window_samples": focus["window_samples"],
             "stat": focus["stat"],
             "threshold": focus["threshold"],
             "alpha": focus["alpha"],
@@ -270,15 +351,19 @@ def run_analysis(args):
         "distribution_fit_config": {
             "hist_bins": args.hist_bins,
             "hist_density": args.hist_density,
+            "hist_scale": "dB" if args.hist_db else "linear",
+            "hist_max": args.hist_max,
+            "hist_drop_above_max": args.hist_drop_above_max,
             "fit_models": args.fit_models,
         },
         "num_windows": len(rows),
     }
 
+    cfar = focus["cfar"]
     distribution_fits = {
-        "noise_vals": _fit_distribution_band(cfar["noise_vals"], args.hist_bins, args.hist_density, args.fit_models),
-        "guard_vals": _fit_distribution_band(cfar["guard_vals"], args.hist_bins, args.hist_density, args.fit_models),
-        "detection_vals": _fit_distribution_band(cfar["detection_vals"], args.hist_bins, args.hist_density, args.fit_models),
+        "noise_vals": _fit_distribution_band(cfar["noise_vals"], args.hist_bins, args.hist_density, args.fit_models, args.hist_db, args.hist_max, args.hist_drop_above_max),
+        "guard_vals": _fit_distribution_band(cfar["guard_vals"], args.hist_bins, args.hist_density, args.fit_models, args.hist_db, args.hist_max, args.hist_drop_above_max),
+        "detection_vals": _fit_distribution_band(cfar["detection_vals"], args.hist_bins, args.hist_density, args.fit_models, args.hist_db, args.hist_max, args.hist_drop_above_max),
     }
     summary_json["distribution_fits"] = distribution_fits
 
@@ -291,7 +376,6 @@ def run_analysis(args):
                 f"{i},{r['idx_start']},{r['idx_end']},{r['idx_center']},{r['time_center_s']:.9f},{r['stat']:.9f},{r['threshold']:.9f},{r['alpha']:.9f},{r['noise_mean']:.9f},{r['e0']:.9f},{r['e1']:.9f},{r['detect_mean']:.9f},{r['guard_mean']:.9f},{r['noise_band_mean']:.9f}\n"
             )
 
-    cfar = focus["cfar"]
     with open(base.with_suffix(".focus_bins.csv"), "w") as fh:
         fh.write("bin,power,band\n")
         for b, v in zip(cfar["noise_bins"], cfar["noise_vals"]):
@@ -472,7 +556,7 @@ def run_analysis(args):
         else:
             fig.write_image(str(base.with_suffix(".plot.png")), scale=2)
 
-        if include_focus_plot:
+        if any(fit_data.get("sample_count", 0) > 0 for fit_data in distribution_fits.values()):
             fit_fig = make_subplots(
                 rows=3,
                 cols=1,
@@ -511,7 +595,7 @@ def run_analysis(args):
                     e_pdf = _exponential_pdf(x_centers, e["lambda"])
                     fit_fig.add_trace(go.Scatter(x=x_centers, y=e_pdf, mode="lines", name=f"{band_names[band_key]} exponential"), row=row_idx, col=1)
                 fit_fig.update_yaxes(title_text="Density" if args.hist_density else "Count", row=row_idx, col=1)
-                fit_fig.update_xaxes(title_text="Power (linear)", row=row_idx, col=1)
+                fit_fig.update_xaxes(title_text=("Power (dB)" if args.hist_db else "Power (linear)"), row=row_idx, col=1)
 
             fit_fig.update_layout(
                 title="CFAR band distribution fits (focus window)",
@@ -520,9 +604,12 @@ def run_analysis(args):
                 margin=dict(t=90, b=70, l=80, r=60),
             )
             if args.plots == "html":
-                fit_fig.write_html(str(base.with_suffix(".distfit.html")), include_plotlyjs="cdn", full_html=True)
+                distfit_path = base.with_suffix(".distfit.html")
+                fit_fig.write_html(str(distfit_path), include_plotlyjs="cdn", full_html=True)
             else:
-                fit_fig.write_image(str(base.with_suffix(".distfit.png")), scale=2)
+                distfit_path = base.with_suffix(".distfit.png")
+                fit_fig.write_image(str(distfit_path), scale=2)
+            print(f"Distribution-fit plot written: {distfit_path}")
 
     print(f"Analysis outputs written with base: {base}")
 
@@ -558,6 +645,7 @@ def parse_args(argv=None):
     focus_scale.add_argument("--focus-db", action="store_true", help="Plot focus-window FFT bin power in dB (10*log10)")
     focus_scale.add_argument("--focus-linear", action="store_true", help="Plot focus-window FFT bin power in linear scale (default)")
     p.add_argument("--focus-freq-max-hz", type=float, default=10000.0, help="Upper x-axis limit in Hz for the focus plot when --frequency-axis is enabled")
+    p.add_argument("--focus-win-symbols", type=int, default=None, help="Focus-window width in symbols for the focus plot and histogram analysis (defaults to --win-symbols)")
     p.add_argument(
         "--focus-region-overlay",
         choices=["none", "lines", "box"],
@@ -578,6 +666,9 @@ def parse_args(argv=None):
     p.add_argument("--plots", choices=["none", "html", "png"], default="html")
     p.add_argument("--hist-bins", type=int, default=50, help="Number of histogram bins for distribution-fit analysis")
     p.add_argument("--hist-density", action="store_true", help="Use density-normalized histogram values instead of raw counts")
+    p.add_argument("--hist-db", action="store_true", help="Transform histogram distribution-fit values to dB before binning to compress dynamic range")
+    p.add_argument("--hist-max", type=float, default=None, help="Upper limit for histogram values after any optional dB transform")
+    p.add_argument("--hist-drop-above-max", action="store_true", help="Drop histogram values above --hist-max instead of saturating them down to the limit")
     p.add_argument(
         "--fit-models",
         choices=["none", "gaussian", "exponential", "both"],
@@ -585,6 +676,10 @@ def parse_args(argv=None):
         help="Which distribution models to fit on CFAR focus-window band samples",
     )
     args = p.parse_args(argv)
+    if args.focus_win_symbols is not None and args.focus_win_symbols <= 0:
+        raise ValueError("Invalid focus window: --focus-win-symbols must be positive.")
+    if args.hist_max is not None and args.hist_drop_above_max and not np.isfinite(args.hist_max):
+        raise ValueError("Invalid histogram maximum: --hist-max must be finite when used with --hist-drop-above-max.")
     if args.heatmap_zmin is not None and args.heatmap_zmax is not None and not (args.heatmap_zmin < args.heatmap_zmax):
         raise ValueError("Invalid heatmap range: --heatmap-zmin must be less than --heatmap-zmax.")
     return args

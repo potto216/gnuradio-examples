@@ -323,14 +323,30 @@ Practical hints:
 - `--focus-db`: render the focus-window spectrum in dB.
 - `--focus-linear`: render the focus-window spectrum in linear power. This is the default.
 - `--focus-freq-max-hz`: upper x-axis limit in Hz for the focus plot when `--frequency-axis` is enabled. Default `10000`.
+- `--focus-win-symbols`: width of the focus window in symbols for the focus plot and histogram analysis. By default it uses `--win-symbols`.
 - `--focus-region-overlay none|lines|box`: mark the selected focus-window time range on the heatmap. Default `none`.
 - `--heatmap-colorscale`: Plotly colorscale name. Default `Viridis`.
 - `--heatmap-zmin`, `--heatmap-zmax`: lower and upper heatmap color limits.
+- `--hist-bins`: number of histogram bins used in the focus-window distribution-fit analysis. Default `50`.
+- `--hist-density`: normalize the histogram to density instead of plotting raw counts.
+- `--hist-db`: convert the focus-window histogram input values to dB before binning, which compresses dynamic range.
+- `--hist-max`: upper limit for histogram values after any optional `--hist-db` transform.
+- `--hist-drop-above-max`: drop values above `--hist-max` instead of saturating them down to that limit.
+- `--fit-models none|gaussian|exponential|both`: choose which model curves to fit to the focus-window band histograms. Default `both`.
 - `--no-stat-plot`, `--no-heatmap-plot`, `--no-focus-plot`, `--no-alpha-plot`: disable individual subplot panels.
 
 Units and side effects:
 - `--heatmap-zmin` and `--heatmap-zmax` use the same units as the selected heatmap scale: dB if the heatmap is in dB, linear power otherwise.
 - `--focus-freq-max-hz` only affects the focus plot, and only when `--frequency-axis` is enabled.
+- `--focus-win-symbols` changes the width of the dedicated focus window used for the focus plot and histogram analysis. If you do not set it, that width follows `--win-symbols`.
+- `--hist-bins`, `--hist-density`, and `--fit-models` affect the focus-window distribution-fit analysis written into the JSON summary and `*.distfit.html` or `*.distfit.png` when plots are enabled.
+- `--hist-db` only affects the histogram/distribution-fit analysis. It does not change the main focus plot, heatmap, or CFAR statistic.
+- `--hist-max` is applied after any optional `--hist-db` conversion.
+- Without `--hist-drop-above-max`, values above `--hist-max` are saturated down to the limit. With `--hist-drop-above-max`, those values are excluded from the histogram and fit analysis entirely.
+- The histogram and fit output is written as a separate `*.distfit.html` or `*.distfit.png` file; it is not embedded inside the main `*.plot.html` or `*.plot.png` figure.
+- `--hist-density` changes the histogram y-axis from count to probability density, which also changes how the fitted Gaussian and exponential curves should be interpreted visually.
+- `--hist-db` changes the histogram x-axis units from linear power to dB. This usually makes broad power spreads easier to visualize, but it also changes the domain on which the Gaussian or exponential fits are computed.
+- `--fit-models none` disables the Gaussian and exponential overlay curves, but the histogram summaries are still computed and written.
 - If both `--heatmap-zmin` and `--heatmap-zmax` are provided, `zmin` must be less than `zmax`.
 - `--plots png` requires Plotly image export support such as `kaleido`; `html` does not.
 - Disabling subplots reduces plot size and clutter, but the corresponding information is still available in the JSON and CSV outputs where applicable.
@@ -339,6 +355,12 @@ Practical hints:
 - Use `--plots html` while tuning because hover labels make it much easier to inspect time, bin, and power values.
 - Use `--frequency-axis --heatmap-db` when you are reasoning about `f0`, `f1`, frequency offset, or guard-bin width.
 - Use `--focus-region-overlay box` when presenting results because it makes the selected focus window obvious in the heatmap.
+- Increase `--focus-win-symbols` when you want the focus plot and histogram to summarize a wider slice around the selected center. Reduce it when you want the histogram to reflect a more local, time-concentrated view.
+- Start with the default `--hist-bins 50`; increase it only if you have enough samples in the selected band and want finer histogram detail.
+- Use `--hist-density` when you want to compare histogram shape against the Gaussian or exponential fit curves rather than compare raw sample counts.
+- Use `--hist-db` when a few large values dominate the linear-power histogram and you want better visibility into the lower-power structure.
+- Use `--hist-max` to prevent a few very large values from dominating the right edge of the histogram. Add `--hist-drop-above-max` when those high-end values are outliers you want removed entirely instead of clipped.
+- Use `--fit-models gaussian` or `--fit-models exponential` when you want to inspect one family at a time without the extra overlay clutter.
 - Set `--out-base` for every experiment so each run writes to a distinct result set.
 
 #### Alpha sweep options
@@ -378,6 +400,7 @@ Given `--out-base results/cfar/packet_02_loopback`, the tool writes:
 - `results/cfar/packet_02_loopback.windows.csv`: One row per sliding window (stat, threshold, etc.)
 - `results/cfar/packet_02_loopback.focus_bins.csv`: FFT bins in the focus window labeled as `noise|guard|detect`
 - `results/cfar/packet_02_loopback.plot.html` or `.plot.png`: CFAR plots (if enabled)
+- `results/cfar/packet_02_loopback.distfit.html` or `.distfit.png`: Focus-window histogram and model-fit plots for noise, guard, and detection bands (if plots are enabled)
 
 ### 8.4 Notes / Gotchas
 - If you see: `Analysis slice shorter than CFAR window`, increase `--span-time/--span-samples` or reduce `--win-symbols`.
