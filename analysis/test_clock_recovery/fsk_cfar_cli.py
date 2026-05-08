@@ -71,15 +71,20 @@ def _fit_distribution_band(
             "histogram": {
                 "bins": int(hist_bins),
                 "density": bool(hist_density),
+                "y_axis_mode": "percent" if hist_density else "count",
                 "scale": "dB" if hist_db else "linear",
                 "upper_limit": hist_max,
                 "drop_above_limit": bool(hist_drop_above_max),
             },
         }
 
-    hist_counts, hist_edges = np.histogram(arr, bins=hist_bins, density=hist_density)
+    hist_counts_raw, hist_edges = np.histogram(arr, bins=hist_bins, density=False)
     hist_centers = 0.5 * (hist_edges[:-1] + hist_edges[1:])
     hist_bin_width = float(hist_edges[1] - hist_edges[0]) if hist_edges.size > 1 else 0.0
+    if hist_density:
+        hist_counts = 100.0 * hist_counts_raw / float(arr.size)
+    else:
+        hist_counts = hist_counts_raw.astype(float)
 
     use_gaussian = fit_models in ("gaussian", "both")
     use_exponential = fit_models in ("exponential", "both")
@@ -93,10 +98,12 @@ def _fit_distribution_band(
         "histogram": {
             "bins": int(hist_bins),
             "density": bool(hist_density),
+            "y_axis_mode": "percent" if hist_density else "count",
             "scale": "dB" if hist_db else "linear",
             "upper_limit": hist_max,
             "drop_above_limit": bool(hist_drop_above_max),
             "counts": hist_counts.tolist(),
+            "counts_raw": hist_counts_raw.tolist(),
             "bin_edges": hist_edges.tolist(),
             "bin_centers": hist_centers.tolist(),
             "bin_width": hist_bin_width,
@@ -105,10 +112,11 @@ def _fit_distribution_band(
 
     if use_gaussian:
         g_pdf = _gaussian_pdf(hist_centers, mu, sigma)
+        g_y = g_pdf * hist_bin_width * 100.0 if hist_density else g_pdf * hist_bin_width * float(arr.size)
         result["gaussian"] = {
             "mu": mu,
             "sigma": sigma,
-            "sse_hist_density": float(np.sum((hist_counts - g_pdf) ** 2)),
+            "sse_hist_y": float(np.sum((hist_counts - g_y) ** 2)),
         }
 
     if use_exponential:
@@ -120,12 +128,13 @@ def _fit_distribution_band(
             emp_cdf = np.arange(1, pos.size + 1, dtype=float) / float(pos.size)
             ks_stat = float(np.max(np.abs(emp_cdf - exp_cdf))) if pos.size else 0.0
             e_pdf = _exponential_pdf(hist_centers, lam)
+            e_y = e_pdf * hist_bin_width * 100.0 if hist_density else e_pdf * hist_bin_width * float(arr.size)
             result["exponential"] = {
                 "lambda": float(lam),
                 "domain": "x>=0",
                 "nonnegative_sample_count": int(pos.size),
                 "ks_statistic_nonnegative": ks_stat,
-                "sse_hist_density": float(np.sum((hist_counts - e_pdf) ** 2)),
+                "sse_hist_y": float(np.sum((hist_counts - e_y) ** 2)),
             }
         else:
             result["exponential"] = {
@@ -133,7 +142,7 @@ def _fit_distribution_band(
                 "domain": "x>=0",
                 "nonnegative_sample_count": 0,
                 "ks_statistic_nonnegative": None,
-                "sse_hist_density": None,
+                "sse_hist_y": None,
             }
 
     return result
@@ -589,12 +598,14 @@ def run_analysis(args):
                 if "gaussian" in fit_data:
                     g = fit_data["gaussian"]
                     g_pdf = _gaussian_pdf(x_centers, g["mu"], g["sigma"])
-                    fit_fig.add_trace(go.Scatter(x=x_centers, y=g_pdf, mode="lines", name=f"{band_names[band_key]} gaussian"), row=row_idx, col=1)
+                    g_y = g_pdf * bin_width * (100.0 if args.hist_density else float(fit_data["sample_count"]))
+                    fit_fig.add_trace(go.Scatter(x=x_centers, y=g_y, mode="lines", name=f"{band_names[band_key]} gaussian"), row=row_idx, col=1)
                 if "exponential" in fit_data and fit_data["exponential"].get("lambda") is not None:
                     e = fit_data["exponential"]
                     e_pdf = _exponential_pdf(x_centers, e["lambda"])
-                    fit_fig.add_trace(go.Scatter(x=x_centers, y=e_pdf, mode="lines", name=f"{band_names[band_key]} exponential"), row=row_idx, col=1)
-                fit_fig.update_yaxes(title_text="Density" if args.hist_density else "Count", row=row_idx, col=1)
+                    e_y = e_pdf * bin_width * (100.0 if args.hist_density else float(fit_data["sample_count"]))
+                    fit_fig.add_trace(go.Scatter(x=x_centers, y=e_y, mode="lines", name=f"{band_names[band_key]} exponential"), row=row_idx, col=1)
+                fit_fig.update_yaxes(title_text="Percent of samples (%)" if args.hist_density else "Count", row=row_idx, col=1)
                 fit_fig.update_xaxes(title_text=("Power (dB)" if args.hist_db else "Power (linear)"), row=row_idx, col=1)
 
             fit_fig.update_layout(

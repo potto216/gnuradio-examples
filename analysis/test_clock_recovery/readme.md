@@ -328,7 +328,7 @@ Practical hints:
 - `--heatmap-colorscale`: Plotly colorscale name. Default `Viridis`.
 - `--heatmap-zmin`, `--heatmap-zmax`: lower and upper heatmap color limits.
 - `--hist-bins`: number of histogram bins used in the focus-window distribution-fit analysis. Default `50`.
-- `--hist-density`: normalize the histogram to density instead of plotting raw counts.
+- `--hist-density`: normalize the histogram to percent-of-samples per bin instead of plotting raw counts.
 - `--hist-db`: convert the focus-window histogram input values to dB before binning, which compresses dynamic range.
 - `--hist-max`: upper limit for histogram values after any optional `--hist-db` transform.
 - `--hist-drop-above-max`: drop values above `--hist-max` instead of saturating them down to that limit.
@@ -344,7 +344,7 @@ Units and side effects:
 - `--hist-max` is applied after any optional `--hist-db` conversion.
 - Without `--hist-drop-above-max`, values above `--hist-max` are saturated down to the limit. With `--hist-drop-above-max`, those values are excluded from the histogram and fit analysis entirely.
 - The histogram and fit output is written as a separate `*.distfit.html` or `*.distfit.png` file; it is not embedded inside the main `*.plot.html` or `*.plot.png` figure.
-- `--hist-density` changes the histogram y-axis from count to probability density, which also changes how the fitted Gaussian and exponential curves should be interpreted visually.
+- `--hist-density` changes the histogram y-axis from count to percent of samples in each bin, so the histogram bars sum to about `100%` across bins.
 - `--hist-db` changes the histogram x-axis units from linear power to dB. This usually makes broad power spreads easier to visualize, but it also changes the domain on which the Gaussian or exponential fits are computed.
 - `--fit-models none` disables the Gaussian and exponential overlay curves, but the histogram summaries are still computed and written.
 - If both `--heatmap-zmin` and `--heatmap-zmax` are provided, `zmin` must be less than `zmax`.
@@ -357,7 +357,7 @@ Practical hints:
 - Use `--focus-region-overlay box` when presenting results because it makes the selected focus window obvious in the heatmap.
 - Increase `--focus-win-symbols` when you want the focus plot and histogram to summarize a wider slice around the selected center. Reduce it when you want the histogram to reflect a more local, time-concentrated view.
 - Start with the default `--hist-bins 50`; increase it only if you have enough samples in the selected band and want finer histogram detail.
-- Use `--hist-density` when you want to compare histogram shape against the Gaussian or exponential fit curves rather than compare raw sample counts.
+- Use `--hist-density` when you want a normalized histogram whose bins sum to about `100%` instead of raw sample counts.
 - Use `--hist-db` when a few large values dominate the linear-power histogram and you want better visibility into the lower-power structure.
 - Use `--hist-max` to prevent a few very large values from dominating the right edge of the histogram. Add `--hist-drop-above-max` when those high-end values are outliers you want removed entirely instead of clipped.
 - Use `--fit-models gaussian` or `--fit-models exponential` when you want to inspect one family at a time without the extra overlay clutter.
